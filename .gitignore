@@ -6,7 +6,11 @@ build-ios/
 *.dylib
 Payload/
 
-# APS3E Android source (too large for git)
+# Build artifacts from CI
+MoltenVK-src/
+MoltenVK-build/
+rpcs3_build/
+rpcs3/
 aps3e-source/
 
 # Temporary files

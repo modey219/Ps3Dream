@@ -114,7 +114,7 @@ add_library(ps3dream_native SHARED
     Ps3Dream/JIT/ios_jit.cpp
 
     # MoltenVK Integration
-    Ps3Dream/MoltenVK/ios_mvk.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Ps3Dream/MoltenVK/ios_mvk.cpp
 
     # Emulator Bridge (Objective-C++)
     Ps3Dream/Bridge/Ps3DreamBridge.mm
