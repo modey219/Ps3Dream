@@ -55,124 +55,145 @@ jobs:
           # Also copy 3rdparty from rpcs3 if it has better structure
           cp -rn rpcs3_build/3rdparty/* "$APS3E_CPP/rpcs3/3rdparty/" 2>/dev/null || true
           
+          # Create stub dirs for missing subdirectories that CMakeLists expects
+          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/libadrenotools"
+          echo "add_library(adrenotools INTERFACE)" > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/CMakeLists.txt"
+          
+          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial"
+          cat > "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial/CMakeLists.txt" << 'EOF'
+          add_library(xxhash INTERFACE)
+          target_include_directories(xxhash INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+          EOF
+          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/xxHash"
+          touch "$APS3E_CPP/rpcs3/3rdparty/xxHash/xxhash.h"
+          
           # Patch libusb os.cmake to support iOS
           if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
             sed -i.bak 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
             echo "Patched libusb os.cmake to allow iOS"
           fi
           
-          # Patch 3rdparty/CMakeLists.txt for iOS using Python for reliability
+          # Replace 3rdparty/CMakeLists.txt with iOS-compatible version
           THIRDPARTY="$APS3E_CPP/rpcs3/3rdparty/CMakeLists.txt"
-          if [ -f "$THIRDPARTY" ]; then
-            python3 -c "
-import re
-with open('$THIRDPARTY', 'r') as f:
-    content = f.read()
+          cp "$THIRDPARTY" "${THIRDPARTY}.bak"
+          cat > "$THIRDPARTY" << 'CMAKEOF'
+          cmake_minimum_required(VERSION 3.22.1)
+          find_package(PkgConfig)
+          include(ExternalProject)
+          include(CMakeDependentOption)
+          set(CMAKE_CXX_STANDARD 20)
+          if(NOT MSVC)
+              add_compile_options("$<$<COMPILE_LANGUAGE:CXX,C>:-w>")
+          endif()
+          add_library(3rdparty_dummy_lib INTERFACE)
 
-# Skip libadrenotools (Android only, missing dir)
-content = content.replace('add_subdirectory(libadrenotools)', '# skip libadrenotools (Android only)')
-content = content.replace('add_library(3rdparty::adrenotools ALIAS adrenotools)', '# skip adrenotools alias')
+          # ZLib
+          add_subdirectory(zlib EXCLUDE_FROM_ALL)
 
-# Wrap xxHash block in IOS check
-content = content.replace(
-    'add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)\n\ttarget_include_directories(xxhash INTERFACE xxHash)',
-    '# xxHash skipped for iOS\n\t# add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)\n\t# target_include_directories(xxhash INTERFACE xxHash)'
-)
+          # ZSTD
+          add_subdirectory(zstd/build/cmake EXCLUDE_FROM_ALL)
 
-# Replace OpenGL section: wrap entire block for NOT ANDROID and NOT IOS
-opengl_old = '''# OpenGL
+          # 7zip sdk
+          add_subdirectory(7zip EXCLUDE_FROM_ALL)
 
-if(NOT ANDROID)
+          # flatbuffers (header-only)
+          add_library(3rdparty_flatbuffers INTERFACE)
+          target_include_directories(3rdparty_flatbuffers INTERFACE flatbuffers/include)
 
-find_package(OpenGL REQUIRED OPTIONAL_COMPONENTS EGL)
+          # libPNG
+          set(LIBPNG_TARGET 3rdparty_libpng)
+          add_subdirectory(libpng EXCLUDE_FROM_ALL)
 
-add_library(3rdparty_opengl INTERFACE)
-target_include_directories(3rdparty_opengl INTERFACE GL)
+          # pugixml
+          add_subdirectory(pugixml EXCLUDE_FROM_ALL)
 
-endif()
+          # yaml-cpp
+          add_subdirectory(yaml-cpp)
 
-if (WIN32)
-\tif(NOT MSVC)
-\t\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU)
-\telse()
-\t\ttarget_link_libraries(3rdparty_opengl INTERFACE dxgi.lib d2d1.lib dwrite.lib)
-\tendif()
-elseif(APPLE)
-\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU)
-elseif(ANDROID)
-\tmessage(STATUS \"does not use OpenGL for Android\")
-else()
-\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU OpenGL::GLX)
-endif()'''
+          # stblib
+          add_subdirectory(stblib)
 
-opengl_new = '''# OpenGL (disabled for iOS)
-if(NOT ANDROID AND NOT IOS)
-find_package(OpenGL REQUIRED OPTIONAL_COMPONENTS EGL)
-add_library(3rdparty_opengl INTERFACE)
-target_include_directories(3rdparty_opengl INTERFACE GL)
-endif()
-if(NOT IOS)
-if (WIN32)
-\tif(NOT MSVC)
-\t\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU)
-\telse()
-\t\ttarget_link_libraries(3rdparty_opengl INTERFACE dxgi.lib d2d1.lib dwrite.lib)
-\tendif()
-elseif(APPLE)
-\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU)
-elseif(ANDROID)
-\tmessage(STATUS \"does not use OpenGL for Android\")
-else()
-\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU OpenGL::GLX)
-endif()
-endif()'''
+          # SoundTouch
+          add_subdirectory(SoundTouch EXCLUDE_FROM_ALL)
 
-content = content.replace(opengl_old, opengl_new)
+          # glslang
+          add_subdirectory(glslang EXCLUDE_FROM_ALL)
 
-# Skip GLEW for iOS
-content = content.replace('if(NOT ANDROID)\nadd_library(3rdparty_glew INTERFACE)\nendif()', 'if(NOT ANDROID AND NOT IOS)\nadd_library(3rdparty_glew INTERFACE)\nendif()')
-content = content.replace('if(NOT MSVC AND NOT ANDROID)\n\tfind_package(GLEW REQUIRED)', 'if(NOT MSVC AND NOT ANDROID AND NOT IOS)\n\tfind_package(GLEW REQUIRED)')
+          # miniupnp
+          add_subdirectory(miniupnp EXCLUDE_FROM_ALL)
 
-# Skip LLVM for iOS
-content = content.replace('add_subdirectory(llvm EXCLUDE_FROM_ALL)', '# LLVM skipped for iOS')
+          # AsmJit
+          add_subdirectory(asmjit EXCLUDE_FROM_ALL)
 
-# Skip cubeb for iOS
-content = content.replace('add_subdirectory(cubeb EXCLUDE_FROM_ALL)', '# cubeb skipped for iOS')
+          # Vulkan (disabled for iOS)
+          set(VULKAN_TARGET 3rdparty_dummy_lib)
 
-# Skip OpenAL for iOS  
-content = content.replace('if(NOT ANDROID)\n    add_subdirectory(OpenAL EXCLUDE_FROM_ALL)\nendif()', 'if(NOT ANDROID AND NOT IOS)\n    add_subdirectory(OpenAL EXCLUDE_FROM_ALL)\nendif()')
+          # FAudio (disabled for iOS)
+          set(FAUDIO_TARGET 3rdparty_dummy_lib)
 
-# Make rtmidi conditional on not iOS
-content = content.replace('if(NOT ANDROID)\n\n# RTMIDI', 'if(NOT ANDROID AND NOT IOS)\n\n# RTMIDI')
+          # SDL2 (disabled for iOS)
+          set(SDL2_TARGET 3rdparty_dummy_lib)
 
-# Skip discord-rpc for iOS  
-content = content.replace('add_subdirectory(discord-rpc)', '# discord-rpc skipped for iOS')
-content = content.replace('add_library(3rdparty::discordRPC ALIAS 3rdparty_discordRPC)', '# skip discordRPC alias')
+          # libevdev (disabled for iOS)
+          set(LIBEVDEV_TARGET 3rdparty_dummy_lib)
 
-# Make ffmpeg conditional
-content = content.replace('add_subdirectory(ffmpeg EXCLUDE_FROM_ALL)', '# ffmpeg skipped for iOS')
+          # Stub targets for disabled deps
+          add_library(xxhash INTERFACE)
+          add_library(usb-1.0-static INTERFACE)
+          add_library(usb-1.0-shared INTERFACE)
+          add_library(adrenotools INTERFACE)
+          add_library(3rdparty_ffmpeg INTERFACE)
+          add_library(3rdparty_glew INTERFACE)
+          add_library(3rdparty_opengl INTERFACE)
+          add_library(3rdparty_openal INTERFACE)
+          add_library(3rdparty_hidapi INTERFACE)
+          add_library(wolfssl INTERFACE)
+          add_library(3rdparty_libcurl INTERFACE)
+          add_library(3rdparty_discordRPC INTERFACE)
+          add_library(cubeb INTERFACE)
+          add_library(rtmidi INTERFACE)
+          add_library(3rdparty_llvm INTERFACE)
+          add_library(3rdparty_sdl3 INTERFACE)
+          add_library(3rdparty_protobuf INTERFACE)
+          add_library(3rdparty_vulkanmemoryallocator INTERFACE)
 
-# Skip wolfssl, curl for iOS
-content = content.replace('add_subdirectory(wolfssl EXCLUDE_FROM_ALL)', '# wolfssl skipped for iOS')
-content = content.replace('add_subdirectory(curl EXCLUDE_FROM_ALL)', '# curl skipped for iOS')
-content = content.replace('add_library(3rdparty::wolfssl ALIAS wolfssl)', '# skip wolfssl alias')
-content = content.replace('add_library(3rdparty::libcurl ALIAS 3rdparty_libcurl)', '# skip libcurl alias')
-content = content.replace('add_library(3rdparty::ffmpeg ALIAS 3rdparty_ffmpeg)', '# skip ffmpeg alias')
-
-# Make hidapi conditional
-content = content.replace('add_subdirectory(hidapi)', 'if(NOT IOS)\nadd_subdirectory(hidapi)\nendif()')
-content = content.replace('add_library(3rdparty::hidapi ALIAS 3rdparty_hidapi)', 'if(NOT IOS)\nadd_library(3rdparty::hidapi ALIAS 3rdparty_hidapi)\nendif()')
-
-with open('$THIRDPARTY', 'w') as f:
-    f.write(content)
-print('Patched 3rdparty/CMakeLists.txt for iOS')
-"
-          fi
-          
-          # Patch rpcs3 CMakeLists to handle iOS
-          if [ -f "$APS3E_CPP/rpcs3/CMakeLists.txt" ]; then
-            sed -i.bak 's/set(CMAKE_OSX_DEPLOYMENT_TARGET.*/set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0")/' "$APS3E_CPP/rpcs3/CMakeLists.txt" 2>/dev/null || true
-          fi
+          # ALIAS targets
+          add_library(3rdparty::zlib ALIAS 3rdparty_zlib)
+          add_library(3rdparty::zstd ALIAS 3rdparty_zstd)
+          add_library(3rdparty::7zip ALIAS 3rdparty_7zip)
+          add_library(3rdparty::flatbuffers ALIAS 3rdparty_flatbuffers)
+          add_library(3rdparty::pugixml ALIAS pugixml)
+          add_library(3rdparty::yaml-cpp ALIAS yaml-cpp)
+          add_library(3rdparty::stblib ALIAS 3rdparty_stblib)
+          add_library(3rdparty::soundtouch ALIAS soundtouch)
+          add_library(3rdparty::libpng ALIAS ${LIBPNG_TARGET})
+          add_library(3rdparty::glslang ALIAS glslang)
+          add_library(3rdparty::miniupnpc ALIAS libminiupnpc-static)
+          add_library(3rdparty::asmjit ALIAS asmjit)
+          add_library(3rdparty::xxhash ALIAS xxhash)
+          add_library(3rdparty::libusb ALIAS usb-1.0-static)
+          add_library(3rdparty::adrenotools ALIAS adrenotools)
+          add_library(3rdparty::ffmpeg ALIAS 3rdparty_ffmpeg)
+          add_library(3rdparty::glew ALIAS 3rdparty_glew)
+          add_library(3rdparty::opengl ALIAS 3rdparty_opengl)
+          add_library(3rdparty::openal ALIAS 3rdparty_openal)
+          add_library(3rdparty::hidapi ALIAS 3rdparty_hidapi)
+          add_library(3rdparty::wolfssl ALIAS wolfssl)
+          add_library(3rdparty::libcurl ALIAS 3rdparty_libcurl)
+          add_library(3rdparty::discordRPC ALIAS 3rdparty_discordRPC)
+          add_library(3rdparty::cubeb ALIAS cubeb)
+          add_library(3rdparty::vulkan ALIAS ${VULKAN_TARGET})
+          add_library(3rdparty::faudio ALIAS ${FAUDIO_TARGET})
+          add_library(3rdparty::sdl2 ALIAS ${SDL2_TARGET})
+          add_library(3rdparty::sdl3 ALIAS 3rdparty_sdl3)
+          add_library(3rdparty::libevdev ALIAS ${LIBEVDEV_TARGET})
+          add_library(3rdparty::rtmidi ALIAS rtmidi)
+          add_library(3rdparty::llvm ALIAS 3rdparty_llvm)
+          add_library(3rdparty::protobuf ALIAS 3rdparty_protobuf)
+          add_library(3rdparty::vulkanmemoryallocator ALIAS 3rdparty_vulkanmemoryallocator)
+          CMAKEOF
+          echo "Replaced 3rdparty/CMakeLists.txt with iOS-compatible version"
+          wc -l "$THIRDPARTY"
           
           echo "=== Final rpcs3 structure ==="
           ls "$APS3E_CPP/rpcs3/" | head -15
@@ -183,7 +204,7 @@ print('Patched 3rdparty/CMakeLists.txt for iOS')
           APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
           
           cat > "$APS3E_CPP/CMakeLists.txt" << 'CMAKEEOF'
-          cmake_minimum_required(VERSION 3.22.1)
+          cmake_minimum_required(VERSION 3.28)
           project(ps3dream LANGUAGES C CXX OBJCXX)
           
           set(CMAKE_CXX_STANDARD 20)
@@ -280,6 +301,8 @@ print('Patched 3rdparty/CMakeLists.txt for iOS')
           
           cmake .. \
             -DCMAKE_SYSTEM_NAME=iOS \
+            -DIOS=TRUE \
+            -DANDROID=TRUE \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 \
             -DCMAKE_OSX_ARCHITECTURES="arm64" \
             -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
