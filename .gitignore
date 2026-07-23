@@ -1,0 +1,21 @@
+# Build output
+build/
+build-ios/
+*.o
+*.a
+*.dylib
+Payload/
+
+# APS3E Android source (too large for git)
+aps3e-source/
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
