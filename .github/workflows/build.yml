@@ -61,29 +61,112 @@ jobs:
             echo "Patched libusb os.cmake to allow iOS"
           fi
           
-          # Patch 3rdparty/CMakeLists.txt for iOS: skip missing/unneeded dirs
+          # Patch 3rdparty/CMakeLists.txt for iOS using Python for reliability
           THIRDPARTY="$APS3E_CPP/rpcs3/3rdparty/CMakeLists.txt"
           if [ -f "$THIRDPARTY" ]; then
-            # Skip libadrenotools (Android only, directory missing)
-            sed -i.bak 's/^add_subdirectory(libadrenotools)/# skip libadrenotools (Android only)/' "$THIRDPARTY"
-            # Skip xxHash (directory missing)
-            sed -i.bak 's|add_subdirectory(xxHash/cmake_unofficial|# skip xxHash|' "$THIRDPARTY"
-            # Skip OpenGL (not on iOS) - wrap find_package(OpenGL) in ANDROID check
-            sed -i.bak '/find_package(OpenGL/,/endif()/{
-              /find_package(OpenGL/i\if(NOT IOS)
-              /endif()/a\endif()
-            }' "$THIRDPARTY" 2>/dev/null || true
-            # Skip GLEW (not on iOS)
-            sed -i.bak 's/^if(NOT ANDROID)$/if(NOT ANDROID AND NOT IOS)/' "$THIRDPARTY"
-            # Skip rtmidi (not on iOS)
-            sed -i.bak 's/^if(NOT ANDROID)$/if(NOT ANDROID AND NOT IOS)/' "$THIRDPARTY"
-            # Skip LLVM - massive and not needed for basic emulation
-            sed -i.bak 's/^add_subdirectory(llvm EXCLUDE_FROM_ALL)/# skip LLVM for iOS/' "$THIRDPARTY"
-            # Skip cubeb (not on iOS)
-            sed -i.bak 's/^add_subdirectory(cubeb EXCLUDE_FROM_ALL)/# skip cubeb for iOS/' "$THIRDPARTY"
-            # Make adrenotools alias conditional
-            sed -i.bak 's/^add_library(3rdparty::adrenotools/# skip add_library(3rdparty::adrenotools/' "$THIRDPARTY"
-            echo "Patched 3rdparty CMakeLists.txt for iOS"
+            python3 -c "
+import re
+with open('$THIRDPARTY', 'r') as f:
+    content = f.read()
+
+# Skip libadrenotools (Android only, missing dir)
+content = content.replace('add_subdirectory(libadrenotools)', '# skip libadrenotools (Android only)')
+content = content.replace('add_library(3rdparty::adrenotools ALIAS adrenotools)', '# skip adrenotools alias')
+
+# Wrap xxHash block in IOS check
+content = content.replace(
+    'add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)\n\ttarget_include_directories(xxhash INTERFACE xxHash)',
+    '# xxHash skipped for iOS\n\t# add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)\n\t# target_include_directories(xxhash INTERFACE xxHash)'
+)
+
+# Replace OpenGL section: wrap entire block for NOT ANDROID and NOT IOS
+opengl_old = '''# OpenGL
+
+if(NOT ANDROID)
+
+find_package(OpenGL REQUIRED OPTIONAL_COMPONENTS EGL)
+
+add_library(3rdparty_opengl INTERFACE)
+target_include_directories(3rdparty_opengl INTERFACE GL)
+
+endif()
+
+if (WIN32)
+\tif(NOT MSVC)
+\t\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU)
+\telse()
+\t\ttarget_link_libraries(3rdparty_opengl INTERFACE dxgi.lib d2d1.lib dwrite.lib)
+\tendif()
+elseif(APPLE)
+\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU)
+elseif(ANDROID)
+\tmessage(STATUS \"does not use OpenGL for Android\")
+else()
+\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU OpenGL::GLX)
+endif()'''
+
+opengl_new = '''# OpenGL (disabled for iOS)
+if(NOT ANDROID AND NOT IOS)
+find_package(OpenGL REQUIRED OPTIONAL_COMPONENTS EGL)
+add_library(3rdparty_opengl INTERFACE)
+target_include_directories(3rdparty_opengl INTERFACE GL)
+endif()
+if(NOT IOS)
+if (WIN32)
+\tif(NOT MSVC)
+\t\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU)
+\telse()
+\t\ttarget_link_libraries(3rdparty_opengl INTERFACE dxgi.lib d2d1.lib dwrite.lib)
+\tendif()
+elseif(APPLE)
+\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU)
+elseif(ANDROID)
+\tmessage(STATUS \"does not use OpenGL for Android\")
+else()
+\ttarget_link_libraries(3rdparty_opengl INTERFACE OpenGL::GL OpenGL::GLU OpenGL::GLX)
+endif()
+endif()'''
+
+content = content.replace(opengl_old, opengl_new)
+
+# Skip GLEW for iOS
+content = content.replace('if(NOT ANDROID)\nadd_library(3rdparty_glew INTERFACE)\nendif()', 'if(NOT ANDROID AND NOT IOS)\nadd_library(3rdparty_glew INTERFACE)\nendif()')
+content = content.replace('if(NOT MSVC AND NOT ANDROID)\n\tfind_package(GLEW REQUIRED)', 'if(NOT MSVC AND NOT ANDROID AND NOT IOS)\n\tfind_package(GLEW REQUIRED)')
+
+# Skip LLVM for iOS
+content = content.replace('add_subdirectory(llvm EXCLUDE_FROM_ALL)', '# LLVM skipped for iOS')
+
+# Skip cubeb for iOS
+content = content.replace('add_subdirectory(cubeb EXCLUDE_FROM_ALL)', '# cubeb skipped for iOS')
+
+# Skip OpenAL for iOS  
+content = content.replace('if(NOT ANDROID)\n    add_subdirectory(OpenAL EXCLUDE_FROM_ALL)\nendif()', 'if(NOT ANDROID AND NOT IOS)\n    add_subdirectory(OpenAL EXCLUDE_FROM_ALL)\nendif()')
+
+# Make rtmidi conditional on not iOS
+content = content.replace('if(NOT ANDROID)\n\n# RTMIDI', 'if(NOT ANDROID AND NOT IOS)\n\n# RTMIDI')
+
+# Skip discord-rpc for iOS  
+content = content.replace('add_subdirectory(discord-rpc)', '# discord-rpc skipped for iOS')
+content = content.replace('add_library(3rdparty::discordRPC ALIAS 3rdparty_discordRPC)', '# skip discordRPC alias')
+
+# Make ffmpeg conditional
+content = content.replace('add_subdirectory(ffmpeg EXCLUDE_FROM_ALL)', '# ffmpeg skipped for iOS')
+
+# Skip wolfssl, curl for iOS
+content = content.replace('add_subdirectory(wolfssl EXCLUDE_FROM_ALL)', '# wolfssl skipped for iOS')
+content = content.replace('add_subdirectory(curl EXCLUDE_FROM_ALL)', '# curl skipped for iOS')
+content = content.replace('add_library(3rdparty::wolfssl ALIAS wolfssl)', '# skip wolfssl alias')
+content = content.replace('add_library(3rdparty::libcurl ALIAS 3rdparty_libcurl)', '# skip libcurl alias')
+content = content.replace('add_library(3rdparty::ffmpeg ALIAS 3rdparty_ffmpeg)', '# skip ffmpeg alias')
+
+# Make hidapi conditional
+content = content.replace('add_subdirectory(hidapi)', 'if(NOT IOS)\nadd_subdirectory(hidapi)\nendif()')
+content = content.replace('add_library(3rdparty::hidapi ALIAS 3rdparty_hidapi)', 'if(NOT IOS)\nadd_library(3rdparty::hidapi ALIAS 3rdparty_hidapi)\nendif()')
+
+with open('$THIRDPARTY', 'w') as f:
+    f.write(content)
+print('Patched 3rdparty/CMakeLists.txt for iOS')
+"
           fi
           
           # Patch rpcs3 CMakeLists to handle iOS
