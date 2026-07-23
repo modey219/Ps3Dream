@@ -25,13 +25,14 @@ jobs:
           git clone --depth 1 --recursive https://github.com/RPCS3/rpcs3.git rpcs3_build
           echo "rpcs3 cloned"
 
-      - name: Build MoltenVK for iOS
+      - name: Download MoltenVK pre-built
         run: |
-          git clone --depth 1 https://github.com/KhronosGroup/MoltenVK.git MoltenVK-build
-          cd MoltenVK-build
-          make ios
-          find . -name "libMoltenVK.a" 2>/dev/null
-          echo "MoltenVK build done"
+          curl -L -o MoltenVK-ios.tar \
+            "https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.2-rc1/MoltenVK-ios.tar"
+          mkdir -p MoltenVK-build
+          tar xf MoltenVK-ios.tar -C MoltenVK-build
+          echo "MoltenVK contents:"
+          find MoltenVK-build -name "libMoltenVK.a" -o -name "MoltenVK.xcframework" 2>/dev/null | head -10
 
       - name: Prepare source tree
         run: |
