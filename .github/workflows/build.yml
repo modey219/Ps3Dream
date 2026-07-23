@@ -61,6 +61,31 @@ jobs:
             echo "Patched libusb os.cmake to allow iOS"
           fi
           
+          # Patch 3rdparty/CMakeLists.txt for iOS: skip missing/unneeded dirs
+          THIRDPARTY="$APS3E_CPP/rpcs3/3rdparty/CMakeLists.txt"
+          if [ -f "$THIRDPARTY" ]; then
+            # Skip libadrenotools (Android only, directory missing)
+            sed -i.bak 's/^add_subdirectory(libadrenotools)/# skip libadrenotools (Android only)/' "$THIRDPARTY"
+            # Skip xxHash (directory missing)
+            sed -i.bak 's|add_subdirectory(xxHash/cmake_unofficial|# skip xxHash|' "$THIRDPARTY"
+            # Skip OpenGL (not on iOS) - wrap find_package(OpenGL) in ANDROID check
+            sed -i.bak '/find_package(OpenGL/,/endif()/{
+              /find_package(OpenGL/i\if(NOT IOS)
+              /endif()/a\endif()
+            }' "$THIRDPARTY" 2>/dev/null || true
+            # Skip GLEW (not on iOS)
+            sed -i.bak 's/^if(NOT ANDROID)$/if(NOT ANDROID AND NOT IOS)/' "$THIRDPARTY"
+            # Skip rtmidi (not on iOS)
+            sed -i.bak 's/^if(NOT ANDROID)$/if(NOT ANDROID AND NOT IOS)/' "$THIRDPARTY"
+            # Skip LLVM - massive and not needed for basic emulation
+            sed -i.bak 's/^add_subdirectory(llvm EXCLUDE_FROM_ALL)/# skip LLVM for iOS/' "$THIRDPARTY"
+            # Skip cubeb (not on iOS)
+            sed -i.bak 's/^add_subdirectory(cubeb EXCLUDE_FROM_ALL)/# skip cubeb for iOS/' "$THIRDPARTY"
+            # Make adrenotools alias conditional
+            sed -i.bak 's/^add_library(3rdparty::adrenotools/# skip add_library(3rdparty::adrenotools/' "$THIRDPARTY"
+            echo "Patched 3rdparty CMakeLists.txt for iOS"
+          fi
+          
           # Patch rpcs3 CMakeLists to handle iOS
           if [ -f "$APS3E_CPP/rpcs3/CMakeLists.txt" ]; then
             sed -i.bak 's/set(CMAKE_OSX_DEPLOYMENT_TARGET.*/set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0")/' "$APS3E_CPP/rpcs3/CMakeLists.txt" 2>/dev/null || true
