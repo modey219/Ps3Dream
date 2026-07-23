@@ -55,6 +55,17 @@ jobs:
           # Also copy 3rdparty from rpcs3 if it has better structure
           cp -rn rpcs3_build/3rdparty/* "$APS3E_CPP/rpcs3/3rdparty/" 2>/dev/null || true
           
+          # Patch libusb os.cmake to support iOS
+          if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
+            sed -i.bak 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
+            echo "Patched libusb os.cmake to allow iOS"
+          fi
+          
+          # Patch rpcs3 CMakeLists to handle iOS
+          if [ -f "$APS3E_CPP/rpcs3/CMakeLists.txt" ]; then
+            sed -i.bak 's/set(CMAKE_OSX_DEPLOYMENT_TARGET.*/set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0")/' "$APS3E_CPP/rpcs3/CMakeLists.txt" 2>/dev/null || true
+          fi
+          
           echo "=== Final rpcs3 structure ==="
           ls "$APS3E_CPP/rpcs3/" | head -15
           ls "$APS3E_CPP/rpcs3/rpcs3/" | head -15
