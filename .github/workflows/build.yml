@@ -82,12 +82,14 @@ jobs:
           set(USE_FAUDIO OFF CACHE BOOL "" FORCE)
           set(USE_SDL OFF CACHE BOOL "" FORCE)
           set(USE_LIBEVDEV OFF CACHE BOOL "" FORCE)
+          set(USE_LIBUSB OFF CACHE BOOL "" FORCE)
           set(USE_ALSA OFF CACHE BOOL "" FORCE)
           set(USE_PULSE OFF CACHE BOOL "" FORCE)
           set(USE_WOLFSSL OFF CACHE BOOL "" FORCE)
           set(USE_OPENAL OFF CACHE BOOL "" FORCE)
           set(USE_CUBEB OFF CACHE BOOL "" FORCE)
           set(USE_GLLD OFF CACHE BOOL "" FORCE)
+          set(USE_FFMPEG OFF CACHE BOOL "" FORCE)
           set(USE_SYSTEM_GLSLANG OFF CACHE BOOL "" FORCE)
           set(USE_SYSTEM_FFMPEG OFF CACHE BOOL "" FORCE)
           set(USE_SYSTEM_LIBUSB OFF CACHE BOOL "" FORCE)
@@ -96,6 +98,13 @@ jobs:
           set(USE_SYSTEM_ZSTD OFF CACHE BOOL "" FORCE)
           set(USE_SYSTEM_LIBPNG OFF CACHE BOOL "" FORCE)
           set(USE_LIBUPNP OFF CACHE BOOL "" FORCE)
+          set(USE_SYSTEM_FFTW OFF CACHE BOOL "" FORCE)
+          set(USE_LLVM OFF CACHE BOOL "" FORCE)
+          set(USE_NATIVE_INSTRUCTIONS OFF CACHE BOOL "" FORCE)
+          set(USE_SYSTEM_LIBLZMA OFF CACHE BOOL "" FORCE)
+          set(BUILD_LLVM OFF CACHE BOOL "" FORCE)
+          set(USE_SYSTEM_BOOST OFF CACHE BOOL "" FORCE)
+          set(USE_VULKAN_MEM_ALLOC OFF CACHE BOOL "" FORCE)
           
           add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)
           
@@ -158,7 +167,7 @@ jobs:
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
-            -G Xcode 2>&1 | tail -50
+            -G Xcode
           
           echo "=== CMake configure done ==="
           
@@ -166,8 +175,7 @@ jobs:
             -sdk iphoneos \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tail -100
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Package IPA
         run: |
