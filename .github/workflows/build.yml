@@ -29,12 +29,7 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/KhronosGroup/MoltenVK.git MoltenVK-build
           cd MoltenVK-build
-          ./fetchDependencies --ios
-          xcodebuild -project MoltenVK.xcodeproj \
-            -scheme "MoltenVK iOS" \
-            -configuration Release \
-            -sdk iphoneos \
-            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          make ios
           find . -name "libMoltenVK.a" 2>/dev/null
           echo "MoltenVK build done"
 
