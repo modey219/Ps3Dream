@@ -250,6 +250,22 @@ jobs:
           # Also create alext.h if needed
           echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/alext.h"
           echo "Created alext.h stub"
+
+          # Create stub rtmidi_c.h (MIDI not supported on iOS)
+          cat > "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" << 'RTMIDI'
+          #pragma once
+          typedef void RtMidiPtr;
+          typedef void RtMidiInPtr;
+          typedef void RtMidiOutPtr;
+          static inline RtMidiInPtr rtmidi_in_create_default(void) { return 0; }
+          static inline void rtmidi_in_open_port(RtMidiInPtr i, unsigned int p, const char *n) { (void)i; (void)p; (void)n; }
+          static inline void rtmidi_in_close_port(RtMidiInPtr i) { (void)i; }
+          static inline void rtmidi_in_callback(RtMidiInPtr i, void (*cb)(double,const char*,size_t,void*), void *ud) { (void)i; (void)cb; (void)ud; }
+          static inline unsigned int rtmidi_get_port_count(void *m) { (void)m; return 0; }
+          static inline const char* rtmidi_get_port_name(void *m, unsigned int p) { (void)m; (void)p; return ""; }
+          RTMIDI
+          cp "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" "$APS3E_CPP/ffmpeg_stubs/rtmidi.h"
+          echo "Created rtmidi_c.h stub"
           
           # Replace USB source files with empty stubs (USB disabled on iOS)
           for usbfile in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp" \
