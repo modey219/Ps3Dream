@@ -121,6 +121,21 @@ jobs:
             echo "Patched libusb os.cmake to allow iOS"
           fi
           
+          # Remove -Werror flags from rpcs3 CMakeLists (not valid for iOS cross-compilation)
+          for f in "$APS3E_CPP/rpcs3/rpcs3/CMakeLists.txt" "$APS3E_CPP/rpcs3/Utilities/CMakeLists.txt"; do
+            if [ -f "$f" ]; then
+              sed -i 's/-Werror=return-type//g; s/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g' "$f"
+              echo "Patched $f to remove -Werror flags"
+            fi
+          done
+          
+          # Patch JIT.h to suppress pthread_jit_write_protect_np unavailability (it IS available on iOS 15+)
+          if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
+            sed -i '1s/^/#pragma clang diagnostic push\n#pragma clang diagnostic ignored "-Wavailability"\n/' "$APS3E_CPP/rpcs3/Utilities/JIT.h"
+            echo '#pragma clang diagnostic pop' >> "$APS3E_CPP/rpcs3/Utilities/JIT.h"
+            echo "Patched JIT.h to suppress availability error"
+          fi
+          
           # Replace 3rdparty/CMakeLists.txt with iOS-compatible version
           THIRDPARTY="$APS3E_CPP/rpcs3/3rdparty/CMakeLists.txt"
           cp "$THIRDPARTY" "${THIRDPARTY}.bak"
@@ -309,17 +324,6 @@ jobs:
           include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_stubs)
           
           add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)
-          
-          # Suppress errors that rpcs3's own CMakeLists adds as -Werror but are not real problems on iOS
-          if(TARGET rpcs3_emu)
-            target_compile_options(rpcs3_emu PRIVATE
-              -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare
-              -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn
-              -Wno-error=implicit-fallthrough -Wno-error=unused-parameter -Wno-error=cast-qual
-              -Wno-error=deprecated-copy -Wno-error=tautological-compare -Wno-error=strict-aliasing
-              -Wno-availability -Wno-deprecated-declarations
-            )
-          endif()
           
           add_library(ps3dream_bridge SHARED
             aps3e_rp3_impl.cpp
