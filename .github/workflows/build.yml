@@ -165,7 +165,6 @@ jobs:
           add_library(3rdparty_sdl3 INTERFACE)
           add_library(3rdparty_protobuf INTERFACE)
           add_library(3rdparty_vulkanmemoryallocator INTERFACE)
-          add_library(3rdparty_miniupnpc INTERFACE)
           add_library(3rdparty_opencv INTERFACE)
           add_library(3rdparty_feralinteractive INTERFACE)
 
