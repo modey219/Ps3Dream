@@ -117,22 +117,26 @@ jobs:
           
           # Patch libusb os.cmake to support iOS
           if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
-            sed -i.bak 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
+            sed -i '' 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
             echo "Patched libusb os.cmake to allow iOS"
           fi
           
           # Remove -Werror flags from rpcs3 CMakeLists (not valid for iOS cross-compilation)
           for f in "$APS3E_CPP/rpcs3/rpcs3/CMakeLists.txt" "$APS3E_CPP/rpcs3/Utilities/CMakeLists.txt"; do
             if [ -f "$f" ]; then
-              sed -i 's/-Werror=return-type//g; s/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g' "$f"
+              sed -i '' 's/-Werror=return-type//g; s/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g' "$f"
               echo "Patched $f to remove -Werror flags"
             fi
           done
           
           # Patch JIT.h to suppress pthread_jit_write_protect_np unavailability (it IS available on iOS 15+)
           if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
-            sed -i '1s/^/#pragma clang diagnostic push\n#pragma clang diagnostic ignored "-Wavailability"\n/' "$APS3E_CPP/rpcs3/Utilities/JIT.h"
-            echo '#pragma clang diagnostic pop' >> "$APS3E_CPP/rpcs3/Utilities/JIT.h"
+            # Use temp file for macOS sed compatibility
+            TMPJIT=$(mktemp)
+            printf '#pragma clang diagnostic push\n#pragma clang diagnostic ignored "-Wavailability"\n' > "$TMPJIT"
+            cat "$APS3E_CPP/rpcs3/Utilities/JIT.h" >> "$TMPJIT"
+            printf '\n#pragma clang diagnostic pop\n' >> "$TMPJIT"
+            mv "$TMPJIT" "$APS3E_CPP/rpcs3/Utilities/JIT.h"
             echo "Patched JIT.h to suppress availability error"
           fi
           
