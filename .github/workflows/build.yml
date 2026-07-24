@@ -254,18 +254,36 @@ jobs:
         \ <string>' >> \"$APS3E_CPP/ffmpeg_stubs/wolfssl/wolfcrypt/error.h\"\necho\
         \ 'static inline const char *wolfSSL_ERR_reason_error_string(unsigned long\
         \ e){(void)e;return \"\";}' >> \"$APS3E_CPP/ffmpeg_stubs/wolfssl/wolfcrypt/error.h\"\
-        \necho \"Created wolfssl/wolfcrypt/error.h stub\"\n\n# Create stub rtmidi_c.h\
-        \ (MIDI not supported on iOS)\ncat > \"$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h\"\
-        \ << 'RTMIDI'\n#pragma once\n#include <stddef.h>\n\ntypedef struct _RtMidi*\
-        \ RtMidiPtr;\ntypedef struct _RtMidi* RtMidiInPtr;\ntypedef struct _RtMidi*\
-        \ RtMidiOutPtr;\n\nstatic inline RtMidiInPtr rtmidi_in_create_default(void)\
-        \ { return 0; }\nstatic inline void rtmidi_in_open_port(RtMidiInPtr i, unsigned\
-        \ int p, const char *n) { (void)i; (void)p; (void)n; }\nstatic inline void\
-        \ rtmidi_in_close_port(RtMidiInPtr i) { (void)i; }\nstatic inline void rtmidi_in_callback(RtMidiInPtr\
-        \ i, void (*cb)(double,const char*,size_t,void*), void *ud) { (void)i; (void)cb;\
-        \ (void)ud; }\nstatic inline unsigned int rtmidi_get_port_count(void *m) {\
-        \ (void)m; return 0; }\nstatic inline const char* rtmidi_get_port_name(void\
-        \ *m, unsigned int p) { (void)m; (void)p; return \"\"; }\nRTMIDI\ncp \"$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h\"\
+        \necho \"Created wolfssl/wolfcrypt/error.h stub\"\n\nmkdir -p \"$APS3E_CPP/ffmpeg_stubs/curl\"\
+        \ncat > \"$APS3E_CPP/ffmpeg_stubs/curl/curl.h\" << 'CURL_EOF'\n#pragma once\n\
+        #include <stddef.h>\n\ntypedef void CURL;\ntypedef int CURLcode;\ntypedef\
+        \ int CURLoption;\ntypedef int CURLINFO;\ntypedef void CURLM;\ntypedef int\
+        \ CURLMcode;\n\n#define CURLE_OK 0\n#define CURL_GLOBAL_DEFAULT 3\n#define\
+        \ CURLOPT_URL 10002\n#define CURLOPT_WRITEFUNCTION 20011\n#define CURLOPT_WRITEDATA\
+        \ 10001\n#define CURLOPT_HTTPHEADER 10023\n#define CURLOPT_CUSTOMREQUEST 10036\n\
+        #define CURLOPT_FOLLOWLOCATION 52\n#define CURLOPT_POSTFIELDS 10015\n#define\
+        \ CURLOPT_POSTFIELDSIZE 60\n#define CURLINFO_RESPONSE_CODE 2097154\n\nstruct\
+        \ curl_slist { char *data; struct curl_slist *next; };\n\nstatic inline CURLcode\
+        \ curl_global_init(long f){(void)f;return CURLE_OK;}\nstatic inline void curl_global_cleanup(void){}\n\
+        static inline CURL *curl_easy_init(void){return 0;}\nstatic inline void curl_easy_cleanup(CURL\
+        \ *c){(void)c;}\nstatic inline CURLcode curl_easy_setopt(CURL *c, CURLoption\
+        \ o, ...){(void)c;(void)o;return CURLE_OK;}\nstatic inline CURLcode curl_easy_perform(CURL\
+        \ *c){(void)c;return CURLE_OK;}\nstatic inline CURLcode curl_easy_getinfo(CURL\
+        \ *c, CURLINFO i, ...){(void)c;(void)i;return CURLE_OK;}\nstatic inline struct\
+        \ curl_slist *curl_slist_append(struct curl_slist *l, const char *s){(void)l;(void)s;return\
+        \ 0;}\nstatic inline void curl_slist_free_all(struct curl_slist *l){(void)l;}\n\
+        CURL_EOF\necho \"Created curl/curl.h stub\"\n\n# Create stub rtmidi_c.h (MIDI\
+        \ not supported on iOS)\ncat > \"$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h\" << 'RTMIDI'\n\
+        #pragma once\n#include <stddef.h>\n\ntypedef struct _RtMidi* RtMidiPtr;\n\
+        typedef struct _RtMidi* RtMidiInPtr;\ntypedef struct _RtMidi* RtMidiOutPtr;\n\
+        \nstatic inline RtMidiInPtr rtmidi_in_create_default(void) { return 0; }\n\
+        static inline void rtmidi_in_open_port(RtMidiInPtr i, unsigned int p, const\
+        \ char *n) { (void)i; (void)p; (void)n; }\nstatic inline void rtmidi_in_close_port(RtMidiInPtr\
+        \ i) { (void)i; }\nstatic inline void rtmidi_in_callback(RtMidiInPtr i, void\
+        \ (*cb)(double,const char*,size_t,void*), void *ud) { (void)i; (void)cb; (void)ud;\
+        \ }\nstatic inline unsigned int rtmidi_get_port_count(void *m) { (void)m;\
+        \ return 0; }\nstatic inline const char* rtmidi_get_port_name(void *m, unsigned\
+        \ int p) { (void)m; (void)p; return \"\"; }\nRTMIDI\ncp \"$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h\"\
         \ \"$APS3E_CPP/ffmpeg_stubs/rtmidi.h\"\necho \"Created rtmidi_c.h stub with\
         \ opaque struct pointers\"\n\n# Replace USB source files with empty stubs\
         \ (USB disabled on iOS)\nfor usbfile in \"$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp\"\
