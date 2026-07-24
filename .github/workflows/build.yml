@@ -84,6 +84,10 @@ jobs:
           mkdir -p "$APS3E_CPP/rpcs3/3rdparty/xxHash"
           touch "$APS3E_CPP/rpcs3/3rdparty/xxHash/xxhash.h"
           
+          # Delete rpcs3's custom FindZLIB.cmake (conflicts with our ZLIB::ZLIB target)
+          rm -f "$APS3E_CPP/rpcs3/buildfiles/cmake/FindZLIB.cmake"
+          echo "Deleted rpcs3 FindZLIB.cmake"
+          
           # Patch libusb os.cmake to support iOS
           if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
             sed -i.bak 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
