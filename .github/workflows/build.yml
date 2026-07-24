@@ -131,26 +131,22 @@ jobs:
           
           # Patch JIT.h to suppress pthread_jit_write_protect_np unavailability (it IS available on iOS 15+)
           if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
-            # Prepend macro overrides before the file so __API_UNAVAILABLE expands to nothing before pthread.h defines it
             TMPJIT=$(mktemp)
-            cat > "$TMPJIT" << 'JITHACK'
-          #ifdef __APPLE__
-          #include <TargetConditionals.h>
-          #if TARGET_OS_IPHONE
-          #undef __API_UNAVAILABLE
-          #define __API_UNAVAILABLE(...)
-          #undef __API_UNAVAILABLE_MSG
-          #define __API_UNAVAILABLE_MSG(...)
-          #pragma clang diagnostic ignored "-Wunguarded-availability-new"
-          #pragma clang diagnostic ignored "-Wunguarded-availability"
-          #pragma clang diagnostic ignored "-Wavailability"
-          #pragma clang diagnostic ignored "-Wunavailable"
-          #endif
-          #endif
-          JITHACK
+            echo '#undef __API_UNAVAILABLE' > "$TMPJIT"
+            echo '#define __API_UNAVAILABLE(...)' >> "$TMPJIT"
+            echo '#undef __API_UNAVAILABLE_MSG' >> "$TMPJIT"
+            echo '#define __API_UNAVAILABLE_MSG(...)' >> "$TMPJIT"
             cat "$APS3E_CPP/rpcs3/Utilities/JIT.h" >> "$TMPJIT"
             mv "$TMPJIT" "$APS3E_CPP/rpcs3/Utilities/JIT.h"
             echo "Patched JIT.h to suppress availability error"
+            head -8 "$APS3E_CPP/rpcs3/Utilities/JIT.h"
+          fi
+          
+          # Patch ConfigureCompiler.cmake to remove ALL -Werror flags (they override our suppression flags)
+          if [ -f "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" ]; then
+            sed -i '' 's/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=return-type//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g; s/-Werror=inconsistent-missing-override//g; s/-Werror=delete-non-virtual-dtor//g' "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake"
+            echo "Patched ConfigureCompiler.cmake to remove -Werror flags"
+            grep -n "Werror" "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" || echo "No -Werror flags remaining"
           fi
           
           # Replace 3rdparty/CMakeLists.txt with iOS-compatible version
@@ -304,12 +300,10 @@ jobs:
           set(CMAKE_OSX_DEPLOYMENT_TARGET 17.0)
           set(CMAKE_OSX_ARCHITECTURES "arm64")
           
-          add_compile_options(-march=armv8-a -stdlib=libc++)
-          add_compile_options(-Wno-multichar -Wno-ignored-pragmas -Wno-attributes -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-parameter -Wno-availability -Wno-deprecated-declarations -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough)
-          
+          # Force __API_UNAVAILABLE to empty to allow pthread_jit_write_protect_np on iOS
           add_definitions(-DENABLE_JIT=1 -DARCH_ARM64=1 -DUNIX_POSIX=1 -D__APPLE__=1 -DAPPLE=1)
-          # Suppress all warnings/errors for iOS cross-compilation
-          add_compile_options(-Wno-error=unavailable -Wno-error=availability -Wno-unavailable -Wno-availability -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough -Wno-error=unused-parameter -Wno-error=cast-qual -Wno-error=deprecated-copy -Wno-error=tautological-compare -Wno-error=strict-aliasing -Wno-deprecated-declarations -Wno-error=unguarded-availability-new)
+          add_compile_options(-march=armv8-a -stdlib=libc++)
+          add_compile_options(-Wno-multichar -Wno-ignored-pragmas -Wno-attributes -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-parameter -Wno-availability -Wno-deprecated-declarations -Wno-unguarded-availability-new -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough)
           
           set(USE_NATIVE_INSTRUCTIONS OFF CACHE BOOL "" FORCE)
           set(USE_VULKAN OFF CACHE BOOL "" FORCE)
@@ -401,6 +395,8 @@ jobs:
             -DANDROID_PLATFORM_LEVEL=30 \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 \
             -DCMAKE_OSX_ARCHITECTURES="arm64" \
+            "-DCMAKE_C_FLAGS=-D__API_UNAVAILABLE(...)= " \
+            "-DCMAKE_CXX_FLAGS=-D__API_UNAVAILABLE(...)= " \
             -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
