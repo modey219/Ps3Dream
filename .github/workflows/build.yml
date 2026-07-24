@@ -94,6 +94,12 @@ jobs:
           add_subdirectory(zlib EXCLUDE_FROM_ALL)
 
           # ZSTD
+          set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+          set(ZSTD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+          set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+          set(ZSTD_BUILD_STATIC ON CACHE BOOL "" FORCE)
+          set(ZSTD_LEGACY_SUPPORT OFF CACHE BOOL "" FORCE)
+          set(ZSTD_MULTITHREAD_SUPPORT OFF CACHE BOOL "" FORCE)
           add_subdirectory(zstd EXCLUDE_FROM_ALL)
 
           # 7zip sdk
