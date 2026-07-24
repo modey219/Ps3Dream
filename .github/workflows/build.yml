@@ -104,8 +104,11 @@ jobs:
           endif()
           add_library(3rdparty_dummy_lib INTERFACE)
 
-          # ZLib
-          add_subdirectory(zlib EXCLUDE_FROM_ALL)
+          # ZLib (use iOS SDK zlib)
+          find_package(ZLIB REQUIRED)
+          add_library(3rdparty_zlib INTERFACE)
+          target_link_libraries(3rdparty_zlib INTERFACE ZLIB::ZLIB)
+          target_compile_definitions(3rdparty_zlib INTERFACE -DZLIB_CONST=1)
 
           # ZSTD
           set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
