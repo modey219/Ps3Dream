@@ -316,6 +316,7 @@ jobs:
             -DCMAKE_SYSTEM_NAME=iOS \
             -DIOS=TRUE \
             -DANDROID=TRUE \
+            -DANDROID_PLATFORM_LEVEL=30 \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 \
             -DCMAKE_OSX_ARCHITECTURES="arm64" \
             -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
