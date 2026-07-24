@@ -116,45 +116,76 @@ jobs:
           ls -la "$APS3E_CPP/ffmpeg_stubs/libavutil/" "$APS3E_CPP/ffmpeg_stubs/libswscale/"
           
           # Create a stub libusb.h (libusb is disabled on iOS)
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_context;' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_device;' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_device_handle;' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_device_descriptor { unsigned short idVendor; unsigned short idProduct; unsigned char bNumConfigurations; };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_config_descriptor { unsigned short wTotalLength; unsigned char bNumInterfaces; };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_interface { unsigned char num_altsetting; };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'enum libusb_error { LIBUSB_SUCCESS=0, LIBUSB_ERROR_IO=-1, LIBUSB_ERROR_INVALID_PARAM=-2, LIBUSB_ERROR_ACCESS=-3, LIBUSB_ERROR_NO_DEVICE=-4, LIBUSB_ERROR_NOT_FOUND=-5, LIBUSB_ERROR_BUSY=-6, LIBUSB_ERROR_TIMEOUT=-7, LIBUSB_ERROR_OVERFLOW=-8, LIBUSB_ERROR_PIPE=-9, LIBUSB_ERROR_INTERRUPTED=-10, LIBUSB_ERROR_NO_MEM=-11, LIBUSB_ERROR_NOT_SUPPORTED=-12 };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'enum libusb_speed { LIBUSB_SPEED_LOW=1, LIBUSB_SPEED_FULL=2, LIBUSB_SPEED_HIGH=3, LIBUSB_SPEED_SUPER=4, LIBUSB_SPEED_SUPER_PLUS=5 };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'enum libusb_transfer_type { LIBUSB_TRANSFER_TYPE_CONTROL=0, LIBUSB_TRANSFER_TYPE_ISOCHRONOUS=1, LIBUSB_TRANSFER_TYPE_BULK=2, LIBUSB_TRANSFER_TYPE_INTERRUPT=3 };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'enum libusb_request_type { LIBUSB_REQUEST_TYPE_STANDARD=0, LIBUSB_REQUEST_TYPE_CLASS=1, LIBUSB_REQUEST_TYPE_VENDOR=2, LIBUSB_REQUEST_TYPE_RESERVED=3 };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'enum libusb_endpoint_direction { LIBUSB_ENDPOINT_IN=128, LIBUSB_ENDPOINT_OUT=0 };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'enum libusb_standard_request { LIBUSB_REQUEST_GET_STATUS=0, LIBUSB_REQUEST_CLEAR_FEATURE=1, LIBUSB_REQUEST_SET_FEATURE=3, LIBUSB_REQUEST_SET_ADDRESS=5, LIBUSB_REQUEST_GET_DESCRIPTOR=6, LIBUSB_REQUEST_SET_DESCRIPTOR=7, LIBUSB_REQUEST_GET_CONFIGURATION=8, LIBUSB_REQUEST_SET_CONFIGURATION=9, LIBUSB_REQUEST_GET_INTERFACE=10, LIBUSB_REQUEST_SET_INTERFACE=11 };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_transfer { unsigned int num_iso_packets; };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_iso_packet_descriptor { unsigned int length; unsigned int actual_length; int status; };' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_init(void **c){(void)c;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline void libusb_exit(void *c){(void)c;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_get_device_list(void *c, void **l){(void)c;(void)l;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline void libusb_free_device_list(void **l, int u){(void)l;(void)u;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_get_device_descriptor(void *d, void *dd){(void)d;(void)dd;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_get_config_descriptor(void *d, int i, void **cd){(void)d;(void)i;(void)cd;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline void libusb_free_config_descriptor(void *cd){(void)cd;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_open(void *d, void **dh){(void)d;(void)dh;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline void libusb_close(void *dh){(void)dh;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_claim_interface(void *dh, int i){(void)dh;(void)i;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_release_interface(void *dh, int i){(void)dh;(void)i;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_bulk_transfer(void *dh, unsigned char ep, unsigned char *d, int l, int *a, unsigned int t){(void)dh;(void)ep;(void)d;(void)l;(void)a;(void)t;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_control_transfer(void *dh, unsigned char rt, unsigned char r, unsigned short wv, unsigned short wi, unsigned char *d, unsigned short l, unsigned int t){(void)dh;(void)rt;(void)r;(void)wv;(void)wi;(void)d;(void)l;(void)t;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_get_string_descriptor_ascii(void *dh, unsigned char si, unsigned char *d, int l){(void)dh;(void)si;(void)d;(void)l;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_set_interface_alt_setting(void *dh, int i, int a){(void)dh;(void)i;(void)a;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline void libusb_free_transfer(void *t){(void)t;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline struct libusb_transfer* libusb_alloc_transfer(int i){(void)i;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_submit_transfer(void *t){(void)t;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_cancel_transfer(void *t){(void)t;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline void libusb_set_pollfd_notifiers(void *c, void *a, void *r){(void)c;(void)a;(void)r;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline const char* libusb_error_name(int e){(void)e;return "stub";}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline void libusb_setlocale(const char *l){(void)l;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline const char* libusb_strerror(int e){(void)e;return "stub";}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo "Created libusb.h stub"
+          cat > "$APS3E_CPP/ffmpeg_stubs/libusb.h" << 'LIBUSB_EOF'
+#pragma once
+#include <stdint.h>
+
+#ifndef LIBUSB_CALL
+#define LIBUSB_CALL
+#endif
+
+#ifndef LIBUSB_CONTROL_SETUP_SIZE
+#define LIBUSB_CONTROL_SETUP_SIZE 9
+#endif
+
+struct libusb_context;
+struct libusb_device;
+struct libusb_device_handle;
+struct libusb_device_descriptor { unsigned short idVendor; unsigned short idProduct; unsigned char bNumConfigurations; };
+struct libusb_config_descriptor { unsigned short wTotalLength; unsigned char bNumInterfaces; };
+struct libusb_interface { unsigned char num_altsetting; };
+
+enum libusb_error { LIBUSB_SUCCESS=0, LIBUSB_ERROR_IO=-1, LIBUSB_ERROR_INVALID_PARAM=-2, LIBUSB_ERROR_ACCESS=-3, LIBUSB_ERROR_NO_DEVICE=-4, LIBUSB_ERROR_NOT_FOUND=-5, LIBUSB_ERROR_BUSY=-6, LIBUSB_ERROR_TIMEOUT=-7, LIBUSB_ERROR_OVERFLOW=-8, LIBUSB_ERROR_PIPE=-9, LIBUSB_ERROR_INTERRUPTED=-10, LIBUSB_ERROR_NO_MEM=-11, LIBUSB_ERROR_NOT_SUPPORTED=-12 };
+enum libusb_speed { LIBUSB_SPEED_LOW=1, LIBUSB_SPEED_FULL=2, LIBUSB_SPEED_HIGH=3, LIBUSB_SPEED_SUPER=4, LIBUSB_SPEED_SUPER_PLUS=5 };
+enum libusb_transfer_type { LIBUSB_TRANSFER_TYPE_CONTROL=0, LIBUSB_TRANSFER_TYPE_ISOCHRONOUS=1, LIBUSB_TRANSFER_TYPE_BULK=2, LIBUSB_TRANSFER_TYPE_INTERRUPT=3 };
+enum libusb_request_type { LIBUSB_REQUEST_TYPE_STANDARD=0, LIBUSB_REQUEST_TYPE_CLASS=1, LIBUSB_REQUEST_TYPE_VENDOR=2, LIBUSB_REQUEST_TYPE_RESERVED=3 };
+enum libusb_endpoint_direction { LIBUSB_ENDPOINT_IN=128, LIBUSB_ENDPOINT_OUT=0 };
+enum libusb_standard_request { LIBUSB_REQUEST_GET_STATUS=0, LIBUSB_REQUEST_CLEAR_FEATURE=1, LIBUSB_REQUEST_SET_FEATURE=3, LIBUSB_REQUEST_SET_ADDRESS=5, LIBUSB_REQUEST_GET_DESCRIPTOR=6, LIBUSB_REQUEST_SET_DESCRIPTOR=7, LIBUSB_REQUEST_GET_CONFIGURATION=8, LIBUSB_REQUEST_SET_CONFIGURATION=9, LIBUSB_REQUEST_GET_INTERFACE=10, LIBUSB_REQUEST_SET_INTERFACE=11 };
+
+enum libusb_transfer_status {
+  LIBUSB_TRANSFER_COMPLETED, LIBUSB_TRANSFER_ERROR, LIBUSB_TRANSFER_TIMED_OUT,
+  LIBUSB_TRANSFER_CANCELLED, LIBUSB_TRANSFER_STALL, LIBUSB_TRANSFER_NO_DEVICE,
+  LIBUSB_TRANSFER_OVERFLOW, LIBUSB_TRANSFER_TYPE_ISOFRAMING_UNDERRUN
+};
+
+struct libusb_transfer {
+  unsigned char endpoint;
+  unsigned char type;
+  unsigned int num_iso_packets;
+  unsigned char *buffer;
+  int actual_length;
+  int length;
+  int status;
+  enum libusb_transfer_type _type;
+};
+
+struct libusb_iso_packet_descriptor { unsigned int length; unsigned int actual_length; int status; };
+
+static inline int libusb_init(void **c){(void)c;return 0;}
+static inline void libusb_exit(void *c){(void)c;}
+static inline int libusb_get_device_list(void *c, void **l){(void)c;(void)l;return 0;}
+static inline void libusb_free_device_list(void **l, int u){(void)l;(void)u;}
+static inline int libusb_get_device_descriptor(void *d, void *dd){(void)d;(void)dd;return 0;}
+static inline int libusb_get_config_descriptor(void *d, int i, void **cd){(void)d;(void)i;(void)cd;return 0;}
+static inline void libusb_free_config_descriptor(void *cd){(void)cd;}
+static inline int libusb_open(void *d, void **dh){(void)d;(void)dh;return 0;}
+static inline void libusb_close(void *dh){(void)dh;}
+static inline int libusb_claim_interface(void *dh, int i){(void)dh;(void)i;return 0;}
+static inline int libusb_release_interface(void *dh, int i){(void)dh;(void)i;return 0;}
+static inline int libusb_bulk_transfer(void *dh, unsigned char ep, unsigned char *d, int l, int *a, unsigned int t){(void)dh;(void)ep;(void)d;(void)l;(void)a;(void)t;return 0;}
+static inline int libusb_control_transfer(void *dh, unsigned char rt, unsigned char r, unsigned short wv, unsigned short wi, unsigned char *d, unsigned short l, unsigned int t){(void)dh;(void)rt;(void)r;(void)wv;(void)wi;(void)d;(void)l;(void)t;return 0;}
+static inline int libusb_get_string_descriptor_ascii(void *dh, unsigned char si, unsigned char *d, int l){(void)dh;(void)si;(void)d;(void)l;return 0;}
+static inline int libusb_set_interface_alt_setting(void *dh, int i, int a){(void)dh;(void)i;(void)a;return 0;}
+static inline void libusb_free_transfer(void *t){(void)t;}
+static inline struct libusb_transfer* libusb_alloc_transfer(int i){(void)i;return 0;}
+static inline int libusb_submit_transfer(void *t){(void)t;return 0;}
+static inline int libusb_cancel_transfer(void *t){(void)t;return 0;}
+static inline void libusb_set_pollfd_notifiers(void *c, void *a, void *r){(void)c;(void)a;(void)r;}
+static inline const char* libusb_error_name(int e){(void)e;return "stub";}
+static inline void libusb_setlocale(const char *l){(void)l;}
+static inline const char* libusb_strerror(int e){(void)e;return "stub";}
+LIBUSB_EOF
+          echo "Created libusb.h stub with LIBUSB_CALL and transfer fields"
           
           # Create a stub libusb-1.0/libusb.h too (some code includes it)
           mkdir -p "$APS3E_CPP/ffmpeg_stubs/libusb-1.0"
@@ -162,115 +193,123 @@ jobs:
           echo "Created libusb-1.0/libusb.h stub"
           
           # Create stub OpenAL headers (OpenAL is disabled on iOS)
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'typedef void ALCdevice;' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'typedef void ALCcontext;' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'typedef int ALCenum;' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'typedef int ALCint;' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'typedef unsigned int ALCuint;' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'typedef int ALCsizei;' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'typedef unsigned char ALCboolean;' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'typedef const char* ALCstring;' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_TRUE 1' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_FALSE 0' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_NO_ERROR 0' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_DEVICE_SPECIFIER 0x1005' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_ALL_DEVICES_SPECIFIER 0x1012' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_DEFAULT_DEVICE_SPECIFIER 0x1004' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_FREQUENCY 0x1007' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_REFRESH 0x1008' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_SYNC 0x1009' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_MONO_SOURCES 0x1010' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo '#define ALC_STEREO_SOURCES 0x1011' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCdevice* alcOpenDevice(ALCstring d){(void)d;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCboolean alcCloseDevice(ALCdevice *d){(void)d;return 1;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCcontext* alcCreateContext(ALCdevice *d, const ALCint *a){(void)d;(void)a;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCboolean alcMakeContextCurrent(ALCcontext *c){(void)c;return 1;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline void alcDestroyContext(ALCcontext *c){(void)c;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCdevice* alcGetContextsDevice(ALCcontext *c){(void)c;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCenum alcGetError(ALCdevice *d){(void)d;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCboolean alcIsExtensionPresent(ALCdevice *d, ALCstring e){(void)d;(void)e;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline void* alcGetProcAddress(ALCdevice *d, ALCstring n){(void)d;(void)n;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCenum alcGetEnumValue(ALCdevice *d, ALCstring n){(void)d;(void)n;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline void alcGetIntegerv(ALCdevice *d, ALCenum p, ALCsizei s, ALCint *v){(void)d;(void)p;(void)s;(void)v;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCstring alcGetString(ALCdevice *d, ALCenum p){(void)d;(void)p;return "";}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline ALCdevice* alcCaptureOpenDevice(ALCstring d, ALCuint f, ALCenum fmt, ALCsizei sz){(void)d;(void)f;(void)fmt;(void)sz;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
+          cat > "$APS3E_CPP/ffmpeg_stubs/alc.h" << 'ALC_EOF'
+#pragma once
+typedef void ALCdevice;
+typedef void ALCcontext;
+typedef int ALCenum;
+typedef int ALCint;
+typedef unsigned int ALCuint;
+typedef int ALCsizei;
+typedef unsigned char ALCboolean;
+typedef const char* ALCstring;
+#define ALC_TRUE 1
+#define ALC_FALSE 0
+#define ALC_NO_ERROR 0
+#define ALC_DEVICE_SPECIFIER 0x1005
+#define ALC_ALL_DEVICES_SPECIFIER 0x1012
+#define ALC_DEFAULT_DEVICE_SPECIFIER 0x1004
+#define ALC_FREQUENCY 0x1007
+#define ALC_REFRESH 0x1008
+#define ALC_SYNC 0x1009
+#define ALC_MONO_SOURCES 0x1010
+#define ALC_STEREO_SOURCES 0x1011
+static inline ALCdevice* alcOpenDevice(ALCstring d){(void)d;return 0;}
+static inline ALCboolean alcCloseDevice(ALCdevice *d){(void)d;return 1;}
+static inline ALCcontext* alcCreateContext(ALCdevice *d, const ALCint *a){(void)d;(void)a;return 0;}
+static inline ALCboolean alcMakeContextCurrent(ALCcontext *c){(void)c;return 1;}
+static inline void alcDestroyContext(ALCcontext *c){(void)c;}
+static inline ALCdevice* alcGetContextsDevice(ALCcontext *c){(void)c;return 0;}
+static inline ALCenum alcGetError(ALCdevice *d){(void)d;return 0;}
+static inline ALCboolean alcIsExtensionPresent(ALCdevice *d, ALCstring e){(void)d;(void)e;return 0;}
+static inline void* alcGetProcAddress(ALCdevice *d, ALCstring n){(void)d;(void)n;return 0;}
+static inline ALCenum alcGetEnumValue(ALCdevice *d, ALCstring n){(void)d;(void)n;return 0;}
+static inline void alcGetIntegerv(ALCdevice *d, ALCenum p, ALCsizei s, ALCint *v){(void)d;(void)p;(void)s;(void)v;}
+static inline ALCstring alcGetString(ALCdevice *d, ALCenum p){(void)d;(void)p;return "";}
+static inline ALCdevice* alcCaptureOpenDevice(ALCstring d, ALCuint f, ALCenum fmt, ALCsizei sz){(void)d;(void)f;(void)fmt;(void)sz;return 0;}
+ALC_EOF
           
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'typedef int ALenum;' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'typedef int ALint;' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'typedef unsigned int ALuint;' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'typedef int ALsizei;' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'typedef unsigned char ALboolean;' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'typedef float ALfloat;' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'typedef void ALvoid;' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'typedef unsigned char ALubyte;' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_TRUE 1' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_FALSE 0' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_NO_ERROR 0' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_BUFFER 0x1009' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_FORMAT_MONO16 0x1101' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_FORMAT_STEREO16 0x1103' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_FREQUENCY 0x1008' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_BITS 0x100A' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_CHANNELS 0x100B' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_SIZE 0x100C' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_SOURCE_STATE 0x1010' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_PLAYING 0x1012' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_STOPPED 0x1014' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_GAIN 0x100A' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_POSITION 0x1004' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_VELOCITY 0x1006' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_LOOPING 0x1007' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_SOURCE 0x1027' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_PITCH 0x1003' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_REFERENCE_DISTANCE 0x1020' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_MAX_DISTANCE 0x1023' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo '#define AL_ROLLOFF_FACTOR 0x1021' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alGenSources(ALsizei n, ALuint *s){(void)n;(void)s;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alDeleteSources(ALsizei n, const ALuint *s){(void)n;(void)s;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alSourcei(ALuint s, ALenum p, ALint v){(void)s;(void)p;(void)v;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alSourcef(ALuint s, ALenum p, ALfloat v){(void)s;(void)p;(void)v;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alSourcePlay(ALuint s){(void)s;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alSourcePause(ALuint s){(void)s;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alSourceStop(ALuint s){(void)s;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alGetSourcei(ALuint s, ALenum p, ALint *v){(void)s;(void)p;(void)v;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alGenBuffers(ALsizei n, ALuint *b){(void)n;(void)b;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alDeleteBuffers(ALsizei n, const ALuint *b){(void)n;(void)b;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alBufferData(ALuint b, ALenum f, const ALvoid *d, ALsizei s, ALsizei r){(void)b;(void)f;(void)d;(void)s;(void)r;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alGetBufferi(ALuint b, ALenum p, ALint *v){(void)b;(void)p;(void)v;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alListeneri(ALenum p, ALint v){(void)p;(void)v;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alListenerf(ALenum p, ALfloat v){(void)p;(void)v;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void alListenerfv(ALenum p, const ALfloat *v){(void)p;(void)v;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline ALenum alGetError(void){return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline ALboolean alIsExtensionPresent(ALstring e){(void)e;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
-          echo 'static inline void* alGetProcAddress(ALstring n){(void)n;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
+          cat > "$APS3E_CPP/ffmpeg_stubs/al.h" << 'AL_EOF'
+#pragma once
+typedef int ALenum;
+typedef int ALint;
+typedef unsigned int ALuint;
+typedef int ALsizei;
+typedef unsigned char ALboolean;
+typedef float ALfloat;
+typedef void ALvoid;
+typedef unsigned char ALubyte;
+typedef const char* ALstring;
+#define AL_TRUE 1
+#define AL_FALSE 0
+#define AL_NO_ERROR 0
+#define AL_BUFFER 0x1009
+#define AL_FORMAT_MONO16 0x1101
+#define AL_FORMAT_STEREO16 0x1103
+#define AL_FREQUENCY 0x1008
+#define AL_BITS 0x100A
+#define AL_CHANNELS 0x100B
+#define AL_SIZE 0x100C
+#define AL_SOURCE_STATE 0x1010
+#define AL_PLAYING 0x1012
+#define AL_STOPPED 0x1014
+#define AL_GAIN 0x100A
+#define AL_POSITION 0x1004
+#define AL_VELOCITY 0x1006
+#define AL_LOOPING 0x1007
+#define AL_SOURCE 0x1027
+#define AL_PITCH 0x1003
+#define AL_REFERENCE_DISTANCE 0x1020
+#define AL_MAX_DISTANCE 0x1023
+#define AL_ROLLOFF_FACTOR 0x1021
+static inline void alGenSources(ALsizei n, ALuint *s){(void)n;(void)s;}
+static inline void alDeleteSources(ALsizei n, const ALuint *s){(void)n;(void)s;}
+static inline void alSourcei(ALuint s, ALenum p, ALint v){(void)s;(void)p;(void)v;}
+static inline void alSourcef(ALuint s, ALenum p, ALfloat v){(void)s;(void)p;(void)v;}
+static inline void alSourcePlay(ALuint s){(void)s;}
+static inline void alSourcePause(ALuint s){(void)s;}
+static inline void alSourceStop(ALuint s){(void)s;}
+static inline void alGetSourcei(ALuint s, ALenum p, ALint *v){(void)s;(void)p;(void)v;}
+static inline void alGenBuffers(ALsizei n, ALuint *b){(void)n;(void)b;}
+static inline void alDeleteBuffers(ALsizei n, const ALuint *b){(void)n;(void)b;}
+static inline void alBufferData(ALuint b, ALenum f, const ALvoid *d, ALsizei s, ALsizei r){(void)b;(void)f;(void)d;(void)s;(void)r;}
+static inline void alGetBufferi(ALuint b, ALenum p, ALint *v){(void)b;(void)p;(void)v;}
+static inline void alListeneri(ALenum p, ALint v){(void)p;(void)v;}
+static inline void alListenerf(ALenum p, ALfloat v){(void)p;(void)v;}
+static inline void alListenerfv(ALenum p, const ALfloat *v){(void)p;(void)v;}
+static inline ALenum alGetError(void){return 0;}
+static inline ALboolean alIsExtensionPresent(ALstring e){(void)e;return 0;}
+static inline void* alGetProcAddress(ALstring n){(void)n;return 0;}
+AL_EOF
           echo "Created OpenAL stub headers"
           
-          # Also create alext.h if needed
           echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/alext.h"
           echo "Created alext.h stub"
 
           # Create stub rtmidi_c.h (MIDI not supported on iOS)
           cat > "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" << 'RTMIDI'
-          #pragma once
-          typedef void RtMidiPtr;
-          typedef void RtMidiInPtr;
-          typedef void RtMidiOutPtr;
-          static inline RtMidiInPtr rtmidi_in_create_default(void) { return 0; }
-          static inline void rtmidi_in_open_port(RtMidiInPtr i, unsigned int p, const char *n) { (void)i; (void)p; (void)n; }
-          static inline void rtmidi_in_close_port(RtMidiInPtr i) { (void)i; }
-          static inline void rtmidi_in_callback(RtMidiInPtr i, void (*cb)(double,const char*,size_t,void*), void *ud) { (void)i; (void)cb; (void)ud; }
-          static inline unsigned int rtmidi_get_port_count(void *m) { (void)m; return 0; }
-          static inline const char* rtmidi_get_port_name(void *m, unsigned int p) { (void)m; (void)p; return ""; }
-          RTMIDI
+#pragma once
+#include <stddef.h>
+
+typedef struct _RtMidi* RtMidiPtr;
+typedef struct _RtMidi* RtMidiInPtr;
+typedef struct _RtMidi* RtMidiOutPtr;
+
+static inline RtMidiInPtr rtmidi_in_create_default(void) { return 0; }
+static inline void rtmidi_in_open_port(RtMidiInPtr i, unsigned int p, const char *n) { (void)i; (void)p; (void)n; }
+static inline void rtmidi_in_close_port(RtMidiInPtr i) { (void)i; }
+static inline void rtmidi_in_callback(RtMidiInPtr i, void (*cb)(double,const char*,size_t,void*), void *ud) { (void)i; (void)cb; (void)ud; }
+static inline unsigned int rtmidi_get_port_count(void *m) { (void)m; return 0; }
+static inline const char* rtmidi_get_port_name(void *m, unsigned int p) { (void)m; (void)p; return ""; }
+RTMIDI
           cp "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" "$APS3E_CPP/ffmpeg_stubs/rtmidi.h"
-          echo "Created rtmidi_c.h stub"
+          echo "Created rtmidi_c.h stub with opaque struct pointers"
           
           # Replace USB source files with empty stubs (USB disabled on iOS)
           for usbfile in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp" \
                           "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_microphone.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp"; do
+                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp" \
+                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/lv2/sys_usbd.cpp"; do
             if [ -f "$usbfile" ]; then
               echo '// Stubbed out for iOS (USB not supported)' > "$usbfile"
               echo "Stubbed $usbfile"
