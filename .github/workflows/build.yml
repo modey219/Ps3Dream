@@ -284,7 +284,6 @@ jobs:
             rpcs3/rpcs3/Input/raw_mouse_handler.cpp
             rpcs3/rpcs3/Input/product_info.cpp
             rpcs3/rpcs3/rpcs3_version.cpp
-            rpcs3/rpcs3/stb_image.cpp
             rpcs3/rpcs3/stdafx.cpp
           )
           
