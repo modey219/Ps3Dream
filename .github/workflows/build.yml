@@ -58,8 +58,13 @@ jobs:
           # Copy buildfiles (contains ConfigureCompiler.cmake etc.)
           cp -r rpcs3_build/buildfiles "$APS3E_CPP/rpcs3/" 2>/dev/null || true
           
-          # Copy Utilities (referenced by rpcs3/Emu CMakeLists via ../../Utilities/)
-          cp -r rpcs3_build/Utilities "$APS3E_CPP/rpcs3/" 2>/dev/null || true
+          # Copy all root-level dirs that rpcs3 source may reference via relative paths
+          for d in Utilities darwin; do
+            if [ -d "rpcs3_build/$d" ]; then
+              cp -r "rpcs3_build/$d" "$APS3E_CPP/rpcs3/"
+              echo "Copied rpcs3_build/$d"
+            fi
+          done
           
           # List files to verify
           echo "=== rpcs3 root ==="
