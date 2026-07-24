@@ -292,7 +292,14 @@ jobs:
         \               \"$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/lv2/sys_usbd.cpp\"; do\n\
         \  if [ -f \"$usbfile\" ]; then\n    echo '// Stubbed out for iOS (USB not\
         \ supported)' > \"$usbfile\"\n    echo \"Stubbed $usbfile\"\n  fi\ndone\n\n\
-        # Patch libusb os.cmake to support iOS\nif [ -f \"$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake\"\
+        # Stub NP/rpcn files that need protobuf (not available on iOS)\nfor npfile\
+        \ in \"$APS3E_CPP/rpcs3/rpcs3/Emu/NP/rpcn_client.cpp\" \\\n              \"\
+        $APS3E_CPP/rpcs3/rpcs3/Emu/NP/rpcn_config.cpp\" \\\n              \"$APS3E_CPP/rpcs3/rpcs3/Emu/NP/rpcn_countries.cpp\"\
+        \ \\\n              \"$APS3E_CPP/rpcs3/rpcs3/Emu/NP/np2_structs.pb.cpp\" \\\
+        \n              \"$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/Modules/sceNpClans.cpp\"\
+        ; do\n  if [ -f \"$npfile\" ]; then\n    echo '// Stubbed out for iOS (NP/protobuf\
+        \ not supported)' > \"$npfile\"\n    echo \"Stubbed $npfile\"\n  fi\ndone\n\
+        \n# Patch libusb os.cmake to support iOS\nif [ -f \"$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake\"\
         \ ]; then\n  sed -i '' 's/message(FATAL_ERROR \"Unsupported platform/message(WARNING\
         \ \"Unsupported platform/' \"$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake\"\n\
         \  echo \"Patched libusb os.cmake to allow iOS\"\nfi\n\n# Remove -Werror flags\
