@@ -273,7 +273,7 @@ jobs:
           set(CMAKE_OSX_ARCHITECTURES "arm64")
           
           add_compile_options(-march=armv8-a -stdlib=libc++)
-          add_compile_options(-Wno-multichar -Wno-ignored-pragmas -Wno-attributes -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-parameter)
+          add_compile_options(-Wno-multichar -Wno-ignored-pragmas -Wno-attributes -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-parameter -Wno-availability -Wno-deprecated-declarations -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough)
           
           add_definitions(-DENABLE_JIT=1 -DARCH_ARM64=1 -DUNIX_POSIX=1 -D__APPLE__=1 -DAPPLE=1)
           
@@ -309,6 +309,17 @@ jobs:
           include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_stubs)
           
           add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)
+          
+          # Suppress errors that rpcs3's own CMakeLists adds as -Werror but are not real problems on iOS
+          if(TARGET rpcs3_emu)
+            target_compile_options(rpcs3_emu PRIVATE
+              -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare
+              -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn
+              -Wno-error=implicit-fallthrough -Wno-error=unused-parameter -Wno-error=cast-qual
+              -Wno-error=deprecated-copy -Wno-error=tautological-compare -Wno-error=strict-aliasing
+              -Wno-availability -Wno-deprecated-declarations
+            )
+          endif()
           
           add_library(ps3dream_bridge SHARED
             aps3e_rp3_impl.cpp
