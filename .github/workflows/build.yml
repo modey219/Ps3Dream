@@ -131,11 +131,24 @@ jobs:
           
           # Patch JIT.h to suppress pthread_jit_write_protect_np unavailability (it IS available on iOS 15+)
           if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
-            # Use temp file for macOS sed compatibility
+            # Prepend macro overrides before the file so __API_UNAVAILABLE expands to nothing before pthread.h defines it
             TMPJIT=$(mktemp)
-            printf '#pragma clang diagnostic push\n#pragma clang diagnostic ignored "-Wavailability"\n' > "$TMPJIT"
+            cat > "$TMPJIT" << 'JITHACK'
+          #ifdef __APPLE__
+          #include <TargetConditionals.h>
+          #if TARGET_OS_IPHONE
+          #undef __API_UNAVAILABLE
+          #define __API_UNAVAILABLE(...)
+          #undef __API_UNAVAILABLE_MSG
+          #define __API_UNAVAILABLE_MSG(...)
+          #pragma clang diagnostic ignored "-Wunguarded-availability-new"
+          #pragma clang diagnostic ignored "-Wunguarded-availability"
+          #pragma clang diagnostic ignored "-Wavailability"
+          #pragma clang diagnostic ignored "-Wunavailable"
+          #endif
+          #endif
+          JITHACK
             cat "$APS3E_CPP/rpcs3/Utilities/JIT.h" >> "$TMPJIT"
-            printf '\n#pragma clang diagnostic pop\n' >> "$TMPJIT"
             mv "$TMPJIT" "$APS3E_CPP/rpcs3/Utilities/JIT.h"
             echo "Patched JIT.h to suppress availability error"
           fi
@@ -295,6 +308,8 @@ jobs:
           add_compile_options(-Wno-multichar -Wno-ignored-pragmas -Wno-attributes -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-parameter -Wno-availability -Wno-deprecated-declarations -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough)
           
           add_definitions(-DENABLE_JIT=1 -DARCH_ARM64=1 -DUNIX_POSIX=1 -D__APPLE__=1 -DAPPLE=1)
+          # Suppress all warnings/errors for iOS cross-compilation
+          add_compile_options(-Wno-error=unavailable -Wno-error=availability -Wno-unavailable -Wno-availability -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough -Wno-error=unused-parameter -Wno-error=cast-qual -Wno-error=deprecated-copy -Wno-error=tautological-compare -Wno-error=strict-aliasing -Wno-deprecated-declarations -Wno-error=unguarded-availability-new)
           
           set(USE_NATIVE_INSTRUCTIONS OFF CACHE BOOL "" FORCE)
           set(USE_VULKAN OFF CACHE BOOL "" FORCE)
