@@ -58,6 +58,15 @@ jobs:
           # Copy buildfiles (contains ConfigureCompiler.cmake etc.)
           cp -r rpcs3_build/buildfiles "$APS3E_CPP/rpcs3/" 2>/dev/null || true
           
+          # Copy Utilities (referenced by rpcs3/Emu CMakeLists via ../../Utilities/)
+          cp -r rpcs3_build/Utilities "$APS3E_CPP/rpcs3/" 2>/dev/null || true
+          
+          # List files to verify
+          echo "=== rpcs3 root ==="
+          ls rpcs3_build/ | head -20
+          echo "=== rpcs3/rpcs3 top-level files ==="
+          ls rpcs3_build/rpcs3/*.cpp 2>/dev/null | head -10
+          
           # Create stub dirs for missing subdirectories that CMakeLists expects
           mkdir -p "$APS3E_CPP/rpcs3/3rdparty/libadrenotools"
           echo "add_library(adrenotools INTERFACE)" > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/CMakeLists.txt"
