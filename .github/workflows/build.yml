@@ -55,6 +55,9 @@ jobs:
           # Also copy 3rdparty from rpcs3 if it has better structure
           cp -rn rpcs3_build/3rdparty/* "$APS3E_CPP/rpcs3/3rdparty/" 2>/dev/null || true
           
+          # Copy buildfiles (contains ConfigureCompiler.cmake etc.)
+          cp -r rpcs3_build/buildfiles "$APS3E_CPP/rpcs3/" 2>/dev/null || true
+          
           # Create stub dirs for missing subdirectories that CMakeLists expects
           mkdir -p "$APS3E_CPP/rpcs3/3rdparty/libadrenotools"
           echo "add_library(adrenotools INTERFACE)" > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/CMakeLists.txt"
@@ -91,7 +94,7 @@ jobs:
           add_subdirectory(zlib EXCLUDE_FROM_ALL)
 
           # ZSTD
-          add_subdirectory(zstd/build/cmake EXCLUDE_FROM_ALL)
+          add_subdirectory(zstd EXCLUDE_FROM_ALL)
 
           # 7zip sdk
           add_subdirectory(7zip EXCLUDE_FROM_ALL)
@@ -156,6 +159,9 @@ jobs:
           add_library(3rdparty_sdl3 INTERFACE)
           add_library(3rdparty_protobuf INTERFACE)
           add_library(3rdparty_vulkanmemoryallocator INTERFACE)
+          add_library(3rdparty_miniupnpc INTERFACE)
+          add_library(3rdparty_opencv INTERFACE)
+          add_library(3rdparty_feralinteractive INTERFACE)
 
           # ALIAS targets
           add_library(3rdparty::zlib ALIAS 3rdparty_zlib)
@@ -168,8 +174,7 @@ jobs:
           add_library(3rdparty::soundtouch ALIAS soundtouch)
           add_library(3rdparty::libpng ALIAS ${LIBPNG_TARGET})
           add_library(3rdparty::glslang ALIAS glslang)
-          add_library(3rdparty::miniupnpc ALIAS libminiupnpc-static)
-          add_library(3rdparty::asmjit ALIAS asmjit)
+          add_library(3rdparty::miniupnpc ALIAS 3rdparty_miniupnpc)
           add_library(3rdparty::xxhash ALIAS xxhash)
           add_library(3rdparty::libusb ALIAS usb-1.0-static)
           add_library(3rdparty::adrenotools ALIAS adrenotools)
@@ -191,6 +196,8 @@ jobs:
           add_library(3rdparty::llvm ALIAS 3rdparty_llvm)
           add_library(3rdparty::protobuf ALIAS 3rdparty_protobuf)
           add_library(3rdparty::vulkanmemoryallocator ALIAS 3rdparty_vulkanmemoryallocator)
+          add_library(3rdparty::opencv ALIAS 3rdparty_opencv)
+          add_library(3rdparty::feralinteractive ALIAS 3rdparty_feralinteractive)
           CMAKEOF
           echo "Replaced 3rdparty/CMakeLists.txt with iOS-compatible version"
           wc -l "$THIRDPARTY"
