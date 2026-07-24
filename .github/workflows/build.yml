@@ -194,7 +194,7 @@ jobs:
           echo 'static inline ALCenum alcGetEnumValue(ALCdevice *d, ALCstring n){(void)d;(void)n;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
           echo 'static inline void alcGetIntegerv(ALCdevice *d, ALCenum p, ALCsizei s, ALCint *v){(void)d;(void)p;(void)s;(void)v;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
           echo 'static inline ALCstring alcGetString(ALCdevice *d, ALCenum p){(void)d;(void)p;return "";}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
-          echo 'static inline void alcCaptureOpenDevice(ALCdevice *d){(void)d;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
+          echo 'static inline ALCdevice* alcCaptureOpenDevice(ALCstring d, ALCuint f, ALCenum fmt, ALCsizei sz){(void)d;(void)f;(void)fmt;(void)sz;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/alc.h"
           
           echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/al.h"
           echo 'typedef int ALenum;' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
@@ -247,9 +247,19 @@ jobs:
           echo 'static inline void* alGetProcAddress(ALstring n){(void)n;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/al.h"
           echo "Created OpenAL stub headers"
           
-          # Also create alalext.h if needed
+          # Also create alext.h if needed
           echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/alext.h"
           echo "Created alext.h stub"
+          
+          # Replace USB source files with empty stubs (USB disabled on iOS)
+          for usbfile in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp" \
+                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_microphone.cpp" \
+                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp"; do
+            if [ -f "$usbfile" ]; then
+              echo '// Stubbed out for iOS (USB not supported)' > "$usbfile"
+              echo "Stubbed $usbfile"
+            fi
+          done
           
           # Patch libusb os.cmake to support iOS
           if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
