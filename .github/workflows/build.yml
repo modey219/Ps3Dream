@@ -1,644 +1,557 @@
 name: Build Ps3Dream iOS
-
-on:
+'on':
   push:
-    branches: [ main ]
-  workflow_dispatch:
-
+    branches:
+    - main
+  workflow_dispatch: null
 jobs:
   build:
     runs-on: macos-14
     timeout-minutes: 180
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+    - name: Install build tools
+      run: brew install cmake pkg-config
+    - name: Clone rpcs3 core
+      run: 'git clone --depth 1 --recursive https://github.com/RPCS3/rpcs3.git rpcs3_build
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+        ls rpcs3_build/CMakeLists.txt
 
-      - name: Install build tools
-        run: brew install cmake pkg-config
+        echo "rpcs3 cloned"'
+    - name: Download MoltenVK
+      run: 'curl -L -o MoltenVK-ios.tar "https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.2-rc1/MoltenVK-ios.tar"
 
-      - name: Clone rpcs3 core
-        run: |
-          git clone --depth 1 --recursive https://github.com/RPCS3/rpcs3.git rpcs3_build
-          ls rpcs3_build/CMakeLists.txt
-          ls rpcs3_build/rpcs3/ | head -10
-          echo "rpcs3 cloned successfully"
+        mkdir -p MoltenVK-build
 
-      - name: Download MoltenVK pre-built
-        run: |
-          curl -L -o MoltenVK-ios.tar \
-            "https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.2-rc1/MoltenVK-ios.tar"
-          mkdir -p MoltenVK-build
-          tar xf MoltenVK-ios.tar -C MoltenVK-build
-          find MoltenVK-build -name "libMoltenVK.a" -o -name "MoltenVK.xcframework" 2>/dev/null | head -10
+        tar xf MoltenVK-ios.tar -C MoltenVK-build
 
-      - name: Prepare source tree
-        run: |
-          APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
-          
-          # Verify source exists
-          echo "=== rpcs3_build contents ==="
-          ls rpcs3_build/ | head -10
-          echo "=== APS3E rpcs3 dir ==="
-          ls "$APS3E_CPP/rpcs3/" | head -10
-          
-          # Copy rpcs3 root CMakeLists.txt
-          cp rpcs3_build/CMakeLists.txt "$APS3E_CPP/rpcs3/CMakeLists.txt"
-          
-          # Copy rpcs3 core source
-          rm -rf "$APS3E_CPP/rpcs3/rpcs3"
-          cp -r rpcs3_build/rpcs3 "$APS3E_CPP/rpcs3/rpcs3"
-          
-          # Also copy 3rdparty from rpcs3 if it has better structure
-          cp -rn rpcs3_build/3rdparty/* "$APS3E_CPP/rpcs3/3rdparty/" 2>/dev/null || true
-          
-          # Copy buildfiles (contains ConfigureCompiler.cmake etc.)
-          cp -r rpcs3_build/buildfiles "$APS3E_CPP/rpcs3/" 2>/dev/null || true
-          
-          # Copy all root-level dirs that rpcs3 source may reference via relative paths
-          for d in Utilities darwin; do
-            if [ -d "rpcs3_build/$d" ]; then
-              cp -r "rpcs3_build/$d" "$APS3E_CPP/rpcs3/"
-              echo "Copied rpcs3_build/$d"
-            fi
-          done
-          
-          # List files to verify
-          echo "=== rpcs3 root ==="
-          ls rpcs3_build/ | head -20
-          echo "=== rpcs3/rpcs3 top-level files ==="
-          ls rpcs3_build/rpcs3/*.cpp 2>/dev/null | head -10
-          
-          # Create stub dirs for missing subdirectories that CMakeLists expects
-          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/libadrenotools"
-          echo "add_library(adrenotools INTERFACE)" > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/CMakeLists.txt"
-          
-          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial"
-          cat > "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial/CMakeLists.txt" << 'EOF'
-          EOF
-          add_library(xxhash INTERFACE)
-          target_include_directories(xxhash INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/..)
-          touch "$APS3E_CPP/rpcs3/3rdparty/xxHash/xxhash.h"
-          
-          # Delete rpcs3's custom FindZLIB.cmake (conflicts with our ZLIB::ZLIB target)
-          rm -f "$APS3E_CPP/rpcs3/buildfiles/cmake/FindZLIB.cmake"
-          echo "Deleted rpcs3 FindZLIB.cmake"
-          
-          # Create stub ffmpeg headers (rsx_utils.h and video_provider.cpp include pixfmt.h unconditionally)
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/libavutil" \
-                   "$APS3E_CPP/ffmpeg_stubs/libavcodec" \
-                   "$APS3E_CPP/ffmpeg_stubs/libavformat" \
-                   "$APS3E_CPP/ffmpeg_stubs/libswscale" \
-                   "$APS3E_CPP/ffmpeg_stubs/libswresample"
-          
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h"
-          echo 'enum AVPixelFormat { AV_PIX_FMT_NONE=-1, AV_PIX_FMT_YUV420P=0, AV_PIX_FMT_YUYV422=1, AV_PIX_FMT_RGB24=2, AV_PIX_FMT_BGR24=3, AV_PIX_FMT_RGBA=26, AV_PIX_FMT_BGRA=28 };' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h"
-          
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo '#include <stdint.h>' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'typedef void SwsContext;' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'enum { SWS_FAST_BILINEAR=1, SWS_BILINEAR=2, SWS_BICUBIC=4, SWS_POINT=8 };' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'static inline SwsContext* sws_getContext(int a,int b,int c,int d,int e,int f,int g,void *h,void *i,void *j){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'static inline SwsContext* sws_getCachedContext(SwsContext *c,int a,int b,int d,int e,int f,int g,int h,void *i,void *j,void *k){(void)c;(void)a;(void)b;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;(void)k;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'static inline int sws_scale(SwsContext *c,const uint8_t *const a[],const int b[],int d,int e,uint8_t *const f[],const int g[]){(void)c;(void)a;(void)b;(void)d;(void)e;(void)f;(void)g;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'static inline void sws_freeContext(SwsContext *c){(void)c;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
-          echo '#include <stdint.h>' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
-          echo 'static inline int av_image_fill_linesizes(int a[],int b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
-          echo 'static inline int av_image_fill_pointers(uint8_t *a[],int b,int c,uint8_t *d,const int e[]){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
-          
-          echo "Created ffmpeg stub headers"
-          ls -la "$APS3E_CPP/ffmpeg_stubs/libavutil/" "$APS3E_CPP/ffmpeg_stubs/libswscale/"
-          
-          # Create a stub libusb.h (libusb is disabled on iOS)
-          cat > "$APS3E_CPP/ffmpeg_stubs/libusb.h" << 'LIBUSB_EOF'
-          LIBUSB_EOF
-          #pragma once
-          #include <stdint.h>
+        find MoltenVK-build -name libMoltenVK.a | head -5'
+    - name: Prepare source tree
+      run: "APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp\necho \"=== rpcs3_build\
+        \ contents ===\"\nls rpcs3_build/ | head -10\necho \"=== APS3E rpcs3 dir ===\"\
+        \nls \"$APS3E_CPP/rpcs3/\" | head -10\ncp rpcs3_build/CMakeLists.txt \"$APS3E_CPP/rpcs3/CMakeLists.txt\"\
+        \nrm -rf \"$APS3E_CPP/rpcs3/rpcs3\"\ncp -r rpcs3_build/rpcs3 \"$APS3E_CPP/rpcs3/rpcs3\"\
+        \ncp -rn rpcs3_build/3rdparty/* \"$APS3E_CPP/rpcs3/3rdparty/\" 2>/dev/null\
+        \ || true\ncp -r rpcs3_build/buildfiles \"$APS3E_CPP/rpcs3/\" 2>/dev/null\
+        \ || true\nfor d in Utilities darwin; do\n  if [ -d \"rpcs3_build/$d\" ];\
+        \ then\n    cp -r \"rpcs3_build/$d\" \"$APS3E_CPP/rpcs3/\"\n    echo \"Copied\
+        \ rpcs3_build/$d\"\n  fi\ndone\necho \"=== rpcs3 root ===\"\nls rpcs3_build/\
+        \ | head -20\nmkdir -p \"$APS3E_CPP/rpcs3/3rdparty/libadrenotools\"\necho\
+        \ \"add_library(adrenotools INTERFACE)\" > \"$APS3E_CPP/rpcs3/3rdparty/libadrenotools/CMakeLists.txt\"\
+        \nmkdir -p \"$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial\"\necho 'add_library(xxhash\
+        \ INTERFACE)' > \"$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial/CMakeLists.txt\"\
+        \necho 'target_include_directories(xxhash INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/..)'\
+        \ >> \"$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial/CMakeLists.txt\"\n\
+        mkdir -p \"$APS3E_CPP/rpcs3/3rdparty/xxHash\"\ntouch \"$APS3E_CPP/rpcs3/3rdparty/xxHash/xxhash.h\"\
+        \nrm -f \"$APS3E_CPP/rpcs3/buildfiles/cmake/FindZLIB.cmake\"\necho \"Deleted\
+        \ rpcs3 FindZLIB.cmake\"\nmkdir -p \"$APS3E_CPP/ffmpeg_stubs/libavutil\" \"\
+        $APS3E_CPP/ffmpeg_stubs/libavcodec\" \"$APS3E_CPP/ffmpeg_stubs/libavformat\"\
+        \ \"$APS3E_CPP/ffmpeg_stubs/libswscale\" \"$APS3E_CPP/ffmpeg_stubs/libswresample\"\
+        \necho '#pragma once' > \"$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h\" \n\
+        echo 'enum AVPixelFormat { AV_PIX_FMT_NONE=-1, AV_PIX_FMT_YUV420P=0, AV_PIX_FMT_YUYV422=1,\
+        \ AV_PIX_FMT_RGB24=2, AV_PIX_FMT_BGR24=3, AV_PIX_FMT_RGBA=26, AV_PIX_FMT_BGRA=28\
+        \ };' >> \"$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h\" \necho '#pragma once'\
+        \ > \"$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h\" \necho '#include <stdint.h>'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h\" \necho 'typedef void\
+        \ SwsContext;' >> \"$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h\" \necho\
+        \ 'enum { SWS_FAST_BILINEAR=1, SWS_BILINEAR=2, SWS_BICUBIC=4, SWS_POINT=8\
+        \ };' >> \"$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h\" \necho 'static inline\
+        \ SwsContext* sws_getContext(int a,int b,int c,int d,int e,int f,int g,void\
+        \ *h,void *i,void *j){return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h\"\
+        \ \necho 'static inline SwsContext* sws_getCachedContext(SwsContext *c,int\
+        \ a,int b,int d,int e,int f,int g,int h,void *i,void *j,void *k){return 0;}'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h\" \necho 'static inline\
+        \ int sws_scale(SwsContext *c,const uint8_t *const a[],const int b[],int d,int\
+        \ e,uint8_t *const f[],const int g[]){return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h\"\
+        \ \necho 'static inline void sws_freeContext(SwsContext *c){}' >> \"$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h\"\
+        \ \necho '#pragma once' > \"$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h\"\
+        \ \necho '#include <stdint.h>' >> \"$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h\"\
+        \ \necho 'static inline int av_image_fill_linesizes(int a[],int b,int c,int\
+        \ d){return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h\" \necho\
+        \ 'static inline int av_image_fill_pointers(uint8_t *a[],int b,int c,uint8_t\
+        \ *d,const int e[]){return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h\"\
+        \ \necho \"Created ffmpeg stub headers\"\necho '#pragma once' > \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho '#include <stdint.h>' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho\
+        \ '#ifndef LIBUSB_CALL' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho '#define\
+        \ LIBUSB_CALL' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho '#endif' >> \"\
+        $APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho '#ifndef LIBUSB_CONTROL_SETUP_SIZE'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho '#define LIBUSB_CONTROL_SETUP_SIZE\
+        \ 9' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho '#endif' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'struct libusb_context;' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\n\
+        echo 'struct libusb_device;' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho\
+        \ 'struct libusb_device_handle;' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\n\
+        echo 'struct libusb_device_descriptor { unsigned short idVendor; unsigned\
+        \ short idProduct; unsigned char bNumConfigurations; };' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'struct libusb_config_descriptor { unsigned short wTotalLength; unsigned\
+        \ char bNumInterfaces; };' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'struct\
+        \ libusb_interface { unsigned char num_altsetting; };' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'enum libusb_error { LIBUSB_SUCCESS=0, LIBUSB_ERROR_IO=-1, LIBUSB_ERROR_INVALID_PARAM=-2,\
+        \ LIBUSB_ERROR_ACCESS=-3, LIBUSB_ERROR_NO_DEVICE=-4, LIBUSB_ERROR_NOT_FOUND=-5,\
+        \ LIBUSB_ERROR_BUSY=-6, LIBUSB_ERROR_TIMEOUT=-7, LIBUSB_ERROR_OVERFLOW=-8,\
+        \ LIBUSB_ERROR_PIPE=-9, LIBUSB_ERROR_INTERRUPTED=-10, LIBUSB_ERROR_NO_MEM=-11,\
+        \ LIBUSB_ERROR_NOT_SUPPORTED=-12 };' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'enum libusb_speed { LIBUSB_SPEED_LOW=1, LIBUSB_SPEED_FULL=2, LIBUSB_SPEED_HIGH=3,\
+        \ LIBUSB_SPEED_SUPER=4, LIBUSB_SPEED_SUPER_PLUS=5 };' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'enum libusb_transfer_type { LIBUSB_TRANSFER_TYPE_CONTROL=0, LIBUSB_TRANSFER_TYPE_ISOCHRONOUS=1,\
+        \ LIBUSB_TRANSFER_TYPE_BULK=2, LIBUSB_TRANSFER_TYPE_INTERRUPT=3 };' >> \"\
+        $APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'enum libusb_request_type { LIBUSB_REQUEST_TYPE_STANDARD=0,\
+        \ LIBUSB_REQUEST_TYPE_CLASS=1, LIBUSB_REQUEST_TYPE_VENDOR=2, LIBUSB_REQUEST_TYPE_RESERVED=3\
+        \ };' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'enum libusb_endpoint_direction\
+        \ { LIBUSB_ENDPOINT_IN=128, LIBUSB_ENDPOINT_OUT=0 };' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'enum libusb_standard_request { LIBUSB_REQUEST_GET_STATUS=0, LIBUSB_REQUEST_CLEAR_FEATURE=1,\
+        \ LIBUSB_REQUEST_SET_FEATURE=3, LIBUSB_REQUEST_SET_ADDRESS=5, LIBUSB_REQUEST_GET_DESCRIPTOR=6,\
+        \ LIBUSB_REQUEST_SET_DESCRIPTOR=7, LIBUSB_REQUEST_GET_CONFIGURATION=8, LIBUSB_REQUEST_SET_CONFIGURATION=9,\
+        \ LIBUSB_REQUEST_GET_INTERFACE=10, LIBUSB_REQUEST_SET_INTERFACE=11 };' >>\
+        \ \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'enum libusb_transfer_status\
+        \ { LIBUSB_TRANSFER_COMPLETED, LIBUSB_TRANSFER_ERROR, LIBUSB_TRANSFER_TIMED_OUT,\
+        \ LIBUSB_TRANSFER_CANCELLED, LIBUSB_TRANSFER_STALL, LIBUSB_TRANSFER_NO_DEVICE,\
+        \ LIBUSB_TRANSFER_OVERFLOW, LIBUSB_TRANSFER_TYPE_ISOFRAMING_UNDERRUN };' >>\
+        \ \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'struct libusb_transfer { unsigned\
+        \ char endpoint; unsigned char type; unsigned int num_iso_packets; unsigned\
+        \ char *buffer; int actual_length; int length; int status; enum libusb_transfer_type\
+        \ _type; };' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'struct libusb_iso_packet_descriptor\
+        \ { unsigned int length; unsigned int actual_length; int status; };' >> \"\
+        $APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline int libusb_init(void\
+        \ **c){(void)c;return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static\
+        \ inline void libusb_exit(void *c){(void)c;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'static inline int libusb_get_device_list(void *c, void **l){(void)c;(void)l;return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline void libusb_free_device_list(void\
+        \ **l, int u){(void)l;(void)u;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\n\
+        echo 'static inline int libusb_get_device_descriptor(void *d, void *dd){(void)d;(void)dd;return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline int libusb_get_config_descriptor(void\
+        \ *d, int i, void **cd){(void)d;(void)i;(void)cd;return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'static inline void libusb_free_config_descriptor(void *cd){(void)cd;}'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline int libusb_open(void\
+        \ *d, void **dh){(void)d;(void)dh;return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'static inline void libusb_close(void *dh){(void)dh;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'static inline int libusb_claim_interface(void *dh, int i){(void)dh;(void)i;return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline int libusb_release_interface(void\
+        \ *dh, int i){(void)dh;(void)i;return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'static inline int libusb_bulk_transfer(void *dh, unsigned char ep,\
+        \ unsigned char *d, int l, int *a, unsigned int t){(void)dh;(void)ep;(void)d;(void)l;(void)a;(void)t;return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline int libusb_control_transfer(void\
+        \ *dh, unsigned char rt, unsigned char r, unsigned short wv, unsigned short\
+        \ wi, unsigned char *d, unsigned short l, unsigned int t){(void)dh;(void)rt;(void)r;(void)wv;(void)wi;(void)d;(void)l;(void)t;return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline int libusb_get_string_descriptor_ascii(void\
+        \ *dh, unsigned char si, unsigned char *d, int l){(void)dh;(void)si;(void)d;(void)l;return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline int libusb_set_interface_alt_setting(void\
+        \ *dh, int i, int a){(void)dh;(void)i;(void)a;return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'static inline void libusb_free_transfer(void *t){(void)t;}' >> \"\
+        $APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline struct libusb_transfer*\
+        \ libusb_alloc_transfer(int i){(void)i;return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'static inline int libusb_submit_transfer(void *t){(void)t;return 0;}'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline int libusb_cancel_transfer(void\
+        \ *t){(void)t;return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static\
+        \ inline void libusb_set_pollfd_notifiers(void *c, void *a, void *r){(void)c;(void)a;(void)r;}'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline const char*\
+        \ libusb_error_name(int e){(void)e;return \"stub\";}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \necho 'static inline void libusb_setlocale(const char *l){(void)l;}' >> \"\
+        $APS3E_CPP/ffmpeg_stubs/libusb.h\"\necho 'static inline const char* libusb_strerror(int\
+        \ e){(void)e;return \"stub\";}' >> \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\n\
+        mkdir -p \"$APS3E_CPP/ffmpeg_stubs/libusb-1.0\"\ncp \"$APS3E_CPP/ffmpeg_stubs/libusb.h\"\
+        \ \"$APS3E_CPP/ffmpeg_stubs/libusb-1.0/libusb.h\"\necho \"Created libusb stubs\"\
+        \necho '#pragma once' > \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho 'typedef void\
+        \ ALCdevice; typedef void ALCcontext; typedef int ALCenum; typedef int ALCint;\
+        \ typedef unsigned int ALCuint; typedef int ALCsizei; typedef unsigned char\
+        \ ALCboolean; typedef const char* ALCstring;' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\
+        \necho '#define ALC_TRUE 1' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define\
+        \ ALC_FALSE 0' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define ALC_NO_ERROR\
+        \ 0' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define ALC_DEVICE_SPECIFIER\
+        \ 0x1005' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define ALC_ALL_DEVICES_SPECIFIER\
+        \ 0x1012' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define ALC_DEFAULT_DEVICE_SPECIFIER\
+        \ 0x1004' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define ALC_FREQUENCY\
+        \ 0x1007' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define ALC_REFRESH\
+        \ 0x1008' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define ALC_SYNC 0x1009'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define ALC_MONO_SOURCES 0x1010'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#define ALC_STEREO_SOURCES 0x1011'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho 'static inline ALCdevice* alcOpenDevice(ALCstring\
+        \ d){return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho 'static inline\
+        \ ALCboolean alcCloseDevice(ALCdevice *d){return 1;}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\
+        \necho 'static inline ALCcontext* alcCreateContext(ALCdevice *d, const ALCint\
+        \ *a){return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho 'static inline\
+        \ ALCboolean alcMakeContextCurrent(ALCcontext *c){return 1;}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\
+        \necho 'static inline void alcDestroyContext(ALCcontext *c){}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\
+        \necho 'static inline ALCdevice* alcGetContextsDevice(ALCcontext *c){return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho 'static inline ALCenum alcGetError(ALCdevice\
+        \ *d){return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho 'static inline\
+        \ ALCboolean alcIsExtensionPresent(ALCdevice *d, ALCstring e){return 0;}'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho 'static inline void* alcGetProcAddress(ALCdevice\
+        \ *d, ALCstring n){return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho\
+        \ 'static inline ALCenum alcGetEnumValue(ALCdevice *d, ALCstring n){return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho 'static inline void alcGetIntegerv(ALCdevice\
+        \ *d, ALCenum p, ALCsizei s, ALCint *v){}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\
+        \necho 'static inline ALCstring alcGetString(ALCdevice *d, ALCenum p){return\
+        \ \"\";}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho 'static inline ALCdevice*\
+        \ alcCaptureOpenDevice(ALCstring d, ALCuint f, ALCenum fmt, ALCsizei sz){return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/alc.h\"\necho '#pragma once' > \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'typedef int ALenum; typedef int ALint; typedef unsigned int ALuint;\
+        \ typedef int ALsizei; typedef unsigned char ALboolean; typedef float ALfloat;\
+        \ typedef void ALvoid; typedef unsigned char ALubyte; typedef const char*\
+        \ ALstring;' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_TRUE 1'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_FALSE 0' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho '#define AL_NO_ERROR 0' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define\
+        \ AL_BUFFER 0x1009' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_FORMAT_MONO16\
+        \ 0x1101' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_FORMAT_STEREO16\
+        \ 0x1103' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_FREQUENCY\
+        \ 0x1008' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_BITS 0x100A'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_CHANNELS 0x100B' >>\
+        \ \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_SIZE 0x100C' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho '#define AL_SOURCE_STATE 0x1010' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho '#define AL_PLAYING 0x1012' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho\
+        \ '#define AL_STOPPED 0x1014' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define\
+        \ AL_GAIN 0x100A' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_POSITION\
+        \ 0x1004' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_VELOCITY 0x1006'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_LOOPING 0x1007' >>\
+        \ \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_SOURCE 0x1027' >> \"\
+        $APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#define AL_PITCH 0x1003' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho '#define AL_REFERENCE_DISTANCE 0x1020' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho '#define AL_MAX_DISTANCE 0x1023' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho '#define AL_ROLLOFF_FACTOR 0x1021' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alGenSources(ALsizei n, ALuint *s){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alDeleteSources(ALsizei n, const ALuint *s){}'\
+        \ >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho 'static inline void alSourcei(ALuint\
+        \ s, ALenum p, ALint v){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho 'static\
+        \ inline void alSourcef(ALuint s, ALenum p, ALfloat v){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alSourcePlay(ALuint s){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alSourcePause(ALuint s){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alSourceStop(ALuint s){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alGetSourcei(ALuint s, ALenum p, ALint *v){}' >>\
+        \ \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho 'static inline void alGenBuffers(ALsizei\
+        \ n, ALuint *b){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho 'static inline\
+        \ void alDeleteBuffers(ALsizei n, const ALuint *b){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alBufferData(ALuint b, ALenum f, const ALvoid *d,\
+        \ ALsizei s, ALsizei r){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho 'static\
+        \ inline void alGetBufferi(ALuint b, ALenum p, ALint *v){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alListeneri(ALenum p, ALint v){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alListenerf(ALenum p, ALfloat v){}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void alListenerfv(ALenum p, const ALfloat *v){}' >>\
+        \ \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho 'static inline ALenum alGetError(void){return\
+        \ 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\necho 'static inline ALboolean\
+        \ alIsExtensionPresent(ALstring e){return 0;}' >> \"$APS3E_CPP/ffmpeg_stubs/al.h\"\
+        \necho 'static inline void* alGetProcAddress(ALstring n){return 0;}' >> \"\
+        $APS3E_CPP/ffmpeg_stubs/al.h\"\necho '#pragma once' > \"$APS3E_CPP/ffmpeg_stubs/alext.h\"\
+        \ncat > \"$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h\" << 'RTMIDI'\n#pragma once\n\
+        #include <stddef.h>\ntypedef struct _RtMidi* RtMidiPtr;\ntypedef struct _RtMidi*\
+        \ RtMidiInPtr;\ntypedef struct _RtMidi* RtMidiOutPtr;\nstatic inline RtMidiInPtr\
+        \ rtmidi_in_create_default(void) { return 0; }\nstatic inline void rtmidi_in_open_port(RtMidiInPtr\
+        \ i, unsigned int p, const char *n) { (void)i; (void)p; (void)n; }\nstatic\
+        \ inline void rtmidi_in_close_port(RtMidiInPtr i) { (void)i; }\nstatic inline\
+        \ void rtmidi_in_callback(RtMidiInPtr i, void (*cb)(double,const char*,size_t,void*),\
+        \ void *ud) { (void)i; (void)cb; (void)ud; }\nstatic inline unsigned int rtmidi_get_port_count(void\
+        \ *m) { (void)m; return 0; }\nstatic inline const char* rtmidi_get_port_name(void\
+        \ *m, unsigned int p) { (void)m; (void)p; return \"\"; }\nRTMIDI\ncp \"$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h\"\
+        \ \"$APS3E_CPP/ffmpeg_stubs/rtmidi.h\"\necho \"Created stubs\"\nfor usbfile\
+        \ in \"$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp\" \"$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_microphone.cpp\"\
+        \ \"$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp\" \"$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/lv2/sys_usbd.cpp\"\
+        ; do\n  if [ -f \"$usbfile\" ]; then echo \"// Stubbed\" > \"$usbfile\"; fi\n\
+        done\nif [ -f \"$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake\" ]; then\n  sed\
+        \ -i '' 's/message(FATAL_ERROR/message(WARNING/' \"$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake\"\
+        \ \nfi\nfor f in \"$APS3E_CPP/rpcs3/rpcs3/CMakeLists.txt\" \"$APS3E_CPP/rpcs3/Utilities/CMakeLists.txt\"\
+        ; do\n  if [ -f \"$f\" ]; then\n    sed -i '' 's/-Werror=return-type//g; s/-Werror=old-style-cast//g;\
+        \ s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=overloaded-virtual//g;\
+        \ s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g' \"$f\"\
+        \ \n  fi\ndone\nif [ -f \"$APS3E_CPP/rpcs3/Utilities/JIT.h\" ]; then\n  TMPJIT=$(mktemp)\n\
+        \  echo '#undef __API_UNAVAILABLE' > \"$TMPJIT\"\n  echo '#define __API_UNAVAILABLE(...)'\
+        \ >> \"$TMPJIT\"\n  echo '#undef __API_UNAVAILABLE_MSG' >> \"$TMPJIT\"\n \
+        \ echo '#define __API_UNAVAILABLE_MSG(...)' >> \"$TMPJIT\"\n  echo '#pragma\
+        \ clang diagnostic ignored \"-Wunguarded-availability-new\"' >> \"$TMPJIT\"\
+        \ \n  cat \"$APS3E_CPP/rpcs3/Utilities/JIT.h\" >> \"$TMPJIT\"\n  mv \"$TMPJIT\"\
+        \ \"$APS3E_CPP/rpcs3/Utilities/JIT.h\"\nfi\necho '#pragma once' > \"$APS3E_CPP/ffmpeg_stubs/pthread.h\"\
+        \necho '#undef __API_UNAVAILABLE' >> \"$APS3E_CPP/ffmpeg_stubs/pthread.h\"\
+        \necho '#define __API_UNAVAILABLE(...)' >> \"$APS3E_CPP/ffmpeg_stubs/pthread.h\"\
+        \necho '#undef __API_UNAVAILABLE_MSG' >> \"$APS3E_CPP/ffmpeg_stubs/pthread.h\"\
+        \necho '#define __API_UNAVAILABLE_MSG(...)' >> \"$APS3E_CPP/ffmpeg_stubs/pthread.h\"\
+        \necho '#include_next <pthread.h>' >> \"$APS3E_CPP/ffmpeg_stubs/pthread.h\"\
+        \ncat \"$APS3E_CPP/ffmpeg_stubs/pthread.h\"\nif [ -f \"$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake\"\
+        \ ]; then\n  sed -i '' 's/-Werror=old-style-cast//g; s/-Werror=sign-compare//g;\
+        \ s/-Werror=reorder//g; s/-Werror=return-type//g; s/-Werror=overloaded-virtual//g;\
+        \ s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g; s/-Werror=inconsistent-missing-override//g;\
+        \ s/-Werror=delete-non-virtual-dtor//g' \"$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake\"\
+        \ \n  grep -n \"Werror\" \"$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake\"\
+        \ || echo \"No -Werror flags remaining\"\nfi\nTHIRDPARTY=\"$APS3E_CPP/rpcs3/3rdparty/CMakeLists.txt\"\
+        \ncp \"$THIRDPARTY\" \"${THIRDPARTY}.bak\"\necho '# === 3rdparty CMakeLists\
+        \ ===' > \"$THIRDPARTY\"\necho 'cmake_minimum_required(VERSION 3.22.1)' >\
+        \ \"$THIRDPARTY\"\necho 'find_package(PkgConfig)' >> \"$THIRDPARTY\"\necho\
+        \ 'include(ExternalProject)' >> \"$THIRDPARTY\"\necho 'include(CMakeDependentOption)'\
+        \ >> \"$THIRDPARTY\"\necho 'set(CMAKE_CXX_STANDARD 20)' >> \"$THIRDPARTY\"\
+        \necho 'if(NOT MSVC)' >> \"$THIRDPARTY\"\necho '    add_compile_options(\"\
+        $<$<COMPILE_LANGUAGE:CXX,C>:-w>\")' >> \"$THIRDPARTY\"\necho 'endif()' >>\
+        \ \"$THIRDPARTY\"\necho 'add_library(3rdparty_dummy_lib INTERFACE)' >> \"\
+        $THIRDPARTY\"\necho 'find_package(ZLIB REQUIRED)' >> \"$THIRDPARTY\"\necho\
+        \ 'add_library(3rdparty_zlib INTERFACE)' >> \"$THIRDPARTY\"\necho 'target_link_libraries(3rdparty_zlib\
+        \ INTERFACE ZLIB::ZLIB)' >> \"$THIRDPARTY\"\necho 'target_compile_definitions(3rdparty_zlib\
+        \ INTERFACE -DZLIB_CONST=1)' >> \"$THIRDPARTY\"\necho 'set(ZSTD_BUILD_PROGRAMS\
+        \ OFF CACHE BOOL \"\" FORCE)' >> \"$THIRDPARTY\"\necho 'set(ZSTD_BUILD_TESTS\
+        \ OFF CACHE BOOL \"\" FORCE)' >> \"$THIRDPARTY\"\necho 'set(ZSTD_BUILD_SHARED\
+        \ OFF CACHE BOOL \"\" FORCE)' >> \"$THIRDPARTY\"\necho 'set(ZSTD_BUILD_STATIC\
+        \ ON CACHE BOOL \"\" FORCE)' >> \"$THIRDPARTY\"\necho 'set(ZSTD_LEGACY_SUPPORT\
+        \ OFF CACHE BOOL \"\" FORCE)' >> \"$THIRDPARTY\"\necho 'set(ZSTD_MULTITHREAD_SUPPORT\
+        \ OFF CACHE BOOL \"\" FORCE)' >> \"$THIRDPARTY\"\necho 'add_subdirectory(zstd\
+        \ EXCLUDE_FROM_ALL)' >> \"$THIRDPARTY\"\necho 'add_subdirectory(7zip EXCLUDE_FROM_ALL)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty_flatbuffers INTERFACE)' >>\
+        \ \"$THIRDPARTY\"\necho 'target_include_directories(3rdparty_flatbuffers INTERFACE\
+        \ flatbuffers/include)' >> \"$THIRDPARTY\"\necho 'set(LIBPNG_TARGET 3rdparty_libpng)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_subdirectory(libpng EXCLUDE_FROM_ALL)' >>\
+        \ \"$THIRDPARTY\"\necho 'add_subdirectory(pugixml EXCLUDE_FROM_ALL)' >> \"\
+        $THIRDPARTY\"\necho 'add_subdirectory(yaml-cpp)' >> \"$THIRDPARTY\"\necho\
+        \ 'add_subdirectory(stblib)' >> \"$THIRDPARTY\"\necho 'add_subdirectory(SoundTouch\
+        \ EXCLUDE_FROM_ALL)' >> \"$THIRDPARTY\"\necho 'add_subdirectory(glslang EXCLUDE_FROM_ALL)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_subdirectory(miniupnp EXCLUDE_FROM_ALL)' >>\
+        \ \"$THIRDPARTY\"\necho 'add_subdirectory(asmjit EXCLUDE_FROM_ALL)' >> \"\
+        $THIRDPARTY\"\necho 'set(VULKAN_TARGET 3rdparty_dummy_lib)' >> \"$THIRDPARTY\"\
+        \necho 'set(FAUDIO_TARGET 3rdparty_dummy_lib)' >> \"$THIRDPARTY\"\necho 'set(SDL2_TARGET\
+        \ 3rdparty_dummy_lib)' >> \"$THIRDPARTY\"\necho 'set(LIBEVDEV_TARGET 3rdparty_dummy_lib)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(xxhash INTERFACE)' >> \"$THIRDPARTY\"\
+        \necho 'add_library(usb-1.0-static INTERFACE)' >> \"$THIRDPARTY\"\necho 'add_library(usb-1.0-shared\
+        \ INTERFACE)' >> \"$THIRDPARTY\"\necho 'add_library(adrenotools INTERFACE)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty_ffmpeg INTERFACE)' >> \"\
+        $THIRDPARTY\"\necho 'add_library(3rdparty_glew INTERFACE)' >> \"$THIRDPARTY\"\
+        \necho 'add_library(3rdparty_opengl INTERFACE)' >> \"$THIRDPARTY\"\necho 'add_library(3rdparty_openal\
+        \ INTERFACE)' >> \"$THIRDPARTY\"\necho 'add_library(3rdparty_hidapi INTERFACE)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(wolfssl INTERFACE)' >> \"$THIRDPARTY\"\
+        \necho 'add_library(3rdparty_libcurl INTERFACE)' >> \"$THIRDPARTY\"\necho\
+        \ 'add_library(3rdparty_discordRPC INTERFACE)' >> \"$THIRDPARTY\"\necho 'add_library(cubeb\
+        \ INTERFACE)' >> \"$THIRDPARTY\"\necho 'add_library(rtmidi INTERFACE)' >>\
+        \ \"$THIRDPARTY\"\necho 'add_library(3rdparty_llvm INTERFACE)' >> \"$THIRDPARTY\"\
+        \necho 'add_library(3rdparty_sdl3 INTERFACE)' >> \"$THIRDPARTY\"\necho 'add_library(3rdparty_protobuf\
+        \ INTERFACE)' >> \"$THIRDPARTY\"\necho 'add_library(3rdparty_vulkanmemoryallocator\
+        \ INTERFACE)' >> \"$THIRDPARTY\"\necho 'add_library(3rdparty_opencv INTERFACE)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty_feralinteractive INTERFACE)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::zlib ALIAS 3rdparty_zlib)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::zstd ALIAS 3rdparty_zstd)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::7zip ALIAS 3rdparty_7zip)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::flatbuffers ALIAS 3rdparty_flatbuffers)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::pugixml ALIAS pugixml)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::yaml-cpp ALIAS yaml-cpp)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::stblib ALIAS 3rdparty_stblib)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::soundtouch ALIAS soundtouch)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::libpng ALIAS ${LIBPNG_TARGET})'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::glslang ALIAS glslang)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::miniupnpc ALIAS 3rdparty_miniupnpc)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::xxhash ALIAS xxhash)' >>\
+        \ \"$THIRDPARTY\"\necho 'add_library(3rdparty::libusb ALIAS usb-1.0-static)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::adrenotools ALIAS adrenotools)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::ffmpeg ALIAS 3rdparty_ffmpeg)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::glew ALIAS 3rdparty_glew)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::opengl ALIAS 3rdparty_opengl)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::openal ALIAS 3rdparty_openal)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::hidapi ALIAS 3rdparty_hidapi)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::wolfssl ALIAS wolfssl)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::libcurl ALIAS 3rdparty_libcurl)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::discordRPC ALIAS 3rdparty_discordRPC)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::cubeb ALIAS cubeb)' >> \"\
+        $THIRDPARTY\"\necho 'add_library(3rdparty::vulkan ALIAS ${VULKAN_TARGET})'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::faudio ALIAS ${FAUDIO_TARGET})'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::sdl2 ALIAS ${SDL2_TARGET})'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::sdl3 ALIAS 3rdparty_sdl3)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::libevdev ALIAS ${LIBEVDEV_TARGET})'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::rtmidi ALIAS rtmidi)' >>\
+        \ \"$THIRDPARTY\"\necho 'add_library(3rdparty::llvm ALIAS 3rdparty_llvm)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::protobuf ALIAS 3rdparty_protobuf)'\
+        \ >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::vulkanmemoryallocator ALIAS\
+        \ 3rdparty_vulkanmemoryallocator)' >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::opencv\
+        \ ALIAS 3rdparty_opencv)' >> \"$THIRDPARTY\"\necho 'add_library(3rdparty::feralinteractive\
+        \ ALIAS 3rdparty_feralinteractive)' >> \"$THIRDPARTY\"\necho \"Replaced 3rdparty/CMakeLists.txt\"\
+        \nwc -l \"$THIRDPARTY\"\nls \"$APS3E_CPP/rpcs3/\" | head -15\nls \"$APS3E_CPP/rpcs3/rpcs3/\"\
+        \ | head -15"
+    - name: Create iOS CMakeLists
+      run: 'APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
 
-          #ifndef LIBUSB_CALL
-          #define LIBUSB_CALL
-          #endif
+        echo ''# === Top-level CMakeLists ==='' > "$APS3E_CPP/CMakeLists.txt"
 
-          #ifndef LIBUSB_CONTROL_SETUP_SIZE
-          #define LIBUSB_CONTROL_SETUP_SIZE 9
-          #endif
+        echo ''cmake_minimum_required(VERSION 3.28)'' > "$APS3E_CPP/CMakeLists.txt"
 
-          struct libusb_context;
-          struct libusb_device;
-          struct libusb_device_handle;
-          struct libusb_device_descriptor { unsigned short idVendor; unsigned short idProduct; unsigned char bNumConfigurations; };
-          struct libusb_config_descriptor { unsigned short wTotalLength; unsigned char bNumInterfaces; };
-          struct libusb_interface { unsigned char num_altsetting; };
+        echo ''project(ps3dream LANGUAGES C CXX OBJCXX)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          enum libusb_error { LIBUSB_SUCCESS=0, LIBUSB_ERROR_IO=-1, LIBUSB_ERROR_INVALID_PARAM=-2, LIBUSB_ERROR_ACCESS=-3, LIBUSB_ERROR_NO_DEVICE=-4, LIBUSB_ERROR_NOT_FOUND=-5, LIBUSB_ERROR_BUSY=-6, LIBUSB_ERROR_TIMEOUT=-7, LIBUSB_ERROR_OVERFLOW=-8, LIBUSB_ERROR_PIPE=-9, LIBUSB_ERROR_INTERRUPTED=-10, LIBUSB_ERROR_NO_MEM=-11, LIBUSB_ERROR_NOT_SUPPORTED=-12 };
-          enum libusb_speed { LIBUSB_SPEED_LOW=1, LIBUSB_SPEED_FULL=2, LIBUSB_SPEED_HIGH=3, LIBUSB_SPEED_SUPER=4, LIBUSB_SPEED_SUPER_PLUS=5 };
-          enum libusb_transfer_type { LIBUSB_TRANSFER_TYPE_CONTROL=0, LIBUSB_TRANSFER_TYPE_ISOCHRONOUS=1, LIBUSB_TRANSFER_TYPE_BULK=2, LIBUSB_TRANSFER_TYPE_INTERRUPT=3 };
-          enum libusb_request_type { LIBUSB_REQUEST_TYPE_STANDARD=0, LIBUSB_REQUEST_TYPE_CLASS=1, LIBUSB_REQUEST_TYPE_VENDOR=2, LIBUSB_REQUEST_TYPE_RESERVED=3 };
-          enum libusb_endpoint_direction { LIBUSB_ENDPOINT_IN=128, LIBUSB_ENDPOINT_OUT=0 };
-          enum libusb_standard_request { LIBUSB_REQUEST_GET_STATUS=0, LIBUSB_REQUEST_CLEAR_FEATURE=1, LIBUSB_REQUEST_SET_FEATURE=3, LIBUSB_REQUEST_SET_ADDRESS=5, LIBUSB_REQUEST_GET_DESCRIPTOR=6, LIBUSB_REQUEST_SET_DESCRIPTOR=7, LIBUSB_REQUEST_GET_CONFIGURATION=8, LIBUSB_REQUEST_SET_CONFIGURATION=9, LIBUSB_REQUEST_GET_INTERFACE=10, LIBUSB_REQUEST_SET_INTERFACE=11 };
+        echo ''set(CMAKE_CXX_STANDARD 20)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          enum libusb_transfer_status {
-          LIBUSB_TRANSFER_COMPLETED, LIBUSB_TRANSFER_ERROR, LIBUSB_TRANSFER_TIMED_OUT,
-          LIBUSB_TRANSFER_CANCELLED, LIBUSB_TRANSFER_STALL, LIBUSB_TRANSFER_NO_DEVICE,
-          LIBUSB_TRANSFER_OVERFLOW, LIBUSB_TRANSFER_TYPE_ISOFRAMING_UNDERRUN
-          };
+        echo ''set(CMAKE_POSITION_INDEPENDENT_CODE ON)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          struct libusb_transfer {
-          unsigned char endpoint;
-          unsigned char type;
-          unsigned int num_iso_packets;
-          unsigned char *buffer;
-          int actual_length;
-          int length;
-          int status;
-          enum libusb_transfer_type _type;
-          };
+        echo ''set(CMAKE_OSX_DEPLOYMENT_TARGET 17.0)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          struct libusb_iso_packet_descriptor { unsigned int length; unsigned int actual_length; int status; };
+        echo ''set(CMAKE_OSX_ARCHITECTURES "arm64")'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          static inline int libusb_init(void **c){(void)c;return 0;}
-          static inline void libusb_exit(void *c){(void)c;}
-          static inline int libusb_get_device_list(void *c, void **l){(void)c;(void)l;return 0;}
-          static inline void libusb_free_device_list(void **l, int u){(void)l;(void)u;}
-          static inline int libusb_get_device_descriptor(void *d, void *dd){(void)d;(void)dd;return 0;}
-          static inline int libusb_get_config_descriptor(void *d, int i, void **cd){(void)d;(void)i;(void)cd;return 0;}
-          static inline void libusb_free_config_descriptor(void *cd){(void)cd;}
-          static inline int libusb_open(void *d, void **dh){(void)d;(void)dh;return 0;}
-          static inline void libusb_close(void *dh){(void)dh;}
-          static inline int libusb_claim_interface(void *dh, int i){(void)dh;(void)i;return 0;}
-          static inline int libusb_release_interface(void *dh, int i){(void)dh;(void)i;return 0;}
-          static inline int libusb_bulk_transfer(void *dh, unsigned char ep, unsigned char *d, int l, int *a, unsigned int t){(void)dh;(void)ep;(void)d;(void)l;(void)a;(void)t;return 0;}
-          static inline int libusb_control_transfer(void *dh, unsigned char rt, unsigned char r, unsigned short wv, unsigned short wi, unsigned char *d, unsigned short l, unsigned int t){(void)dh;(void)rt;(void)r;(void)wv;(void)wi;(void)d;(void)l;(void)t;return 0;}
-          static inline int libusb_get_string_descriptor_ascii(void *dh, unsigned char si, unsigned char *d, int l){(void)dh;(void)si;(void)d;(void)l;return 0;}
-          static inline int libusb_set_interface_alt_setting(void *dh, int i, int a){(void)dh;(void)i;(void)a;return 0;}
-          static inline void libusb_free_transfer(void *t){(void)t;}
-          static inline struct libusb_transfer* libusb_alloc_transfer(int i){(void)i;return 0;}
-          static inline int libusb_submit_transfer(void *t){(void)t;return 0;}
-          static inline int libusb_cancel_transfer(void *t){(void)t;return 0;}
-          static inline void libusb_set_pollfd_notifiers(void *c, void *a, void *r){(void)c;(void)a;(void)r;}
-          static inline const char* libusb_error_name(int e){(void)e;return "stub";}
-          static inline void libusb_setlocale(const char *l){(void)l;}
-          static inline const char* libusb_strerror(int e){(void)e;return "stub";}
-          
-          # Create a stub libusb-1.0/libusb.h too (some code includes it)
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/libusb-1.0"
-          cp "$APS3E_CPP/ffmpeg_stubs/libusb.h" "$APS3E_CPP/ffmpeg_stubs/libusb-1.0/libusb.h"
-          echo "Created libusb-1.0/libusb.h stub"
-          
-          # Create stub OpenAL headers (OpenAL is disabled on iOS)
-          cat > "$APS3E_CPP/ffmpeg_stubs/alc.h" << 'ALC_EOF'
-          ALC_EOF
-          #pragma once
-          typedef void ALCdevice;
-          typedef void ALCcontext;
-          typedef int ALCenum;
-          typedef int ALCint;
-          typedef unsigned int ALCuint;
-          typedef int ALCsizei;
-          typedef unsigned char ALCboolean;
-          typedef const char* ALCstring;
-          #define ALC_TRUE 1
-          #define ALC_FALSE 0
-          #define ALC_NO_ERROR 0
-          #define ALC_DEVICE_SPECIFIER 0x1005
-          #define ALC_ALL_DEVICES_SPECIFIER 0x1012
-          #define ALC_DEFAULT_DEVICE_SPECIFIER 0x1004
-          #define ALC_FREQUENCY 0x1007
-          #define ALC_REFRESH 0x1008
-          #define ALC_SYNC 0x1009
-          #define ALC_MONO_SOURCES 0x1010
-          #define ALC_STEREO_SOURCES 0x1011
-          static inline ALCdevice* alcOpenDevice(ALCstring d){(void)d;return 0;}
-          static inline ALCboolean alcCloseDevice(ALCdevice *d){(void)d;return 1;}
-          static inline ALCcontext* alcCreateContext(ALCdevice *d, const ALCint *a){(void)d;(void)a;return 0;}
-          static inline ALCboolean alcMakeContextCurrent(ALCcontext *c){(void)c;return 1;}
-          static inline void alcDestroyContext(ALCcontext *c){(void)c;}
-          static inline ALCdevice* alcGetContextsDevice(ALCcontext *c){(void)c;return 0;}
-          static inline ALCenum alcGetError(ALCdevice *d){(void)d;return 0;}
-          static inline ALCboolean alcIsExtensionPresent(ALCdevice *d, ALCstring e){(void)d;(void)e;return 0;}
-          static inline void* alcGetProcAddress(ALCdevice *d, ALCstring n){(void)d;(void)n;return 0;}
-          static inline ALCenum alcGetEnumValue(ALCdevice *d, ALCstring n){(void)d;(void)n;return 0;}
-          static inline void alcGetIntegerv(ALCdevice *d, ALCenum p, ALCsizei s, ALCint *v){(void)d;(void)p;(void)s;(void)v;}
-          static inline ALCstring alcGetString(ALCdevice *d, ALCenum p){(void)d;(void)p;return "";}
-          static inline ALCdevice* alcCaptureOpenDevice(ALCstring d, ALCuint f, ALCenum fmt, ALCsizei sz){(void)d;(void)f;(void)fmt;(void)sz;return 0;}
-          cat > "$APS3E_CPP/ffmpeg_stubs/al.h" << 'AL_EOF'
-          AL_EOF
-          #pragma once
-          typedef int ALenum;
-          typedef int ALint;
-          typedef unsigned int ALuint;
-          typedef int ALsizei;
-          typedef unsigned char ALboolean;
-          typedef float ALfloat;
-          typedef void ALvoid;
-          typedef unsigned char ALubyte;
-          typedef const char* ALstring;
-          #define AL_TRUE 1
-          #define AL_FALSE 0
-          #define AL_NO_ERROR 0
-          #define AL_BUFFER 0x1009
-          #define AL_FORMAT_MONO16 0x1101
-          #define AL_FORMAT_STEREO16 0x1103
-          #define AL_FREQUENCY 0x1008
-          #define AL_BITS 0x100A
-          #define AL_CHANNELS 0x100B
-          #define AL_SIZE 0x100C
-          #define AL_SOURCE_STATE 0x1010
-          #define AL_PLAYING 0x1012
-          #define AL_STOPPED 0x1014
-          #define AL_GAIN 0x100A
-          #define AL_POSITION 0x1004
-          #define AL_VELOCITY 0x1006
-          #define AL_LOOPING 0x1007
-          #define AL_SOURCE 0x1027
-          #define AL_PITCH 0x1003
-          #define AL_REFERENCE_DISTANCE 0x1020
-          #define AL_MAX_DISTANCE 0x1023
-          #define AL_ROLLOFF_FACTOR 0x1021
-          static inline void alGenSources(ALsizei n, ALuint *s){(void)n;(void)s;}
-          static inline void alDeleteSources(ALsizei n, const ALuint *s){(void)n;(void)s;}
-          static inline void alSourcei(ALuint s, ALenum p, ALint v){(void)s;(void)p;(void)v;}
-          static inline void alSourcef(ALuint s, ALenum p, ALfloat v){(void)s;(void)p;(void)v;}
-          static inline void alSourcePlay(ALuint s){(void)s;}
-          static inline void alSourcePause(ALuint s){(void)s;}
-          static inline void alSourceStop(ALuint s){(void)s;}
-          static inline void alGetSourcei(ALuint s, ALenum p, ALint *v){(void)s;(void)p;(void)v;}
-          static inline void alGenBuffers(ALsizei n, ALuint *b){(void)n;(void)b;}
-          static inline void alDeleteBuffers(ALsizei n, const ALuint *b){(void)n;(void)b;}
-          static inline void alBufferData(ALuint b, ALenum f, const ALvoid *d, ALsizei s, ALsizei r){(void)b;(void)f;(void)d;(void)s;(void)r;}
-          static inline void alGetBufferi(ALuint b, ALenum p, ALint *v){(void)b;(void)p;(void)v;}
-          static inline void alListeneri(ALenum p, ALint v){(void)p;(void)v;}
-          static inline void alListenerf(ALenum p, ALfloat v){(void)p;(void)v;}
-          static inline void alListenerfv(ALenum p, const ALfloat *v){(void)p;(void)v;}
-          static inline ALenum alGetError(void){return 0;}
-          static inline ALboolean alIsExtensionPresent(ALstring e){(void)e;return 0;}
-          static inline void* alGetProcAddress(ALstring n){(void)n;return 0;}
-          
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/alext.h"
-          echo "Created alext.h stub"
+        echo ''add_definitions(-DENABLE_JIT=1 -DARCH_ARM64=1 -DUNIX_POSIX=1 -D__APPLE__=1
+        -DAPPLE=1)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # Create stub rtmidi_c.h (MIDI not supported on iOS)
-          cat > "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" << 'RTMIDI'
-          RTMIDI
-          #pragma once
-          #include <stddef.h>
+        echo ''add_compile_options(-march=armv8-a -stdlib=libc++)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          typedef struct _RtMidi* RtMidiPtr;
-          typedef struct _RtMidi* RtMidiInPtr;
-          typedef struct _RtMidi* RtMidiOutPtr;
+        echo ''add_compile_options(-Wno-multichar -Wno-ignored-pragmas -Wno-attributes
+        -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-parameter -Wno-availability
+        -Wno-deprecated-declarations -Wno-unguarded-availability-new -Wno-error=return-type
+        -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual
+        -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          static inline RtMidiInPtr rtmidi_in_create_default(void) { return 0; }
-          static inline void rtmidi_in_open_port(RtMidiInPtr i, unsigned int p, const char *n) { (void)i; (void)p; (void)n; }
-          static inline void rtmidi_in_close_port(RtMidiInPtr i) { (void)i; }
-          static inline void rtmidi_in_callback(RtMidiInPtr i, void (*cb)(double,const char*,size_t,void*), void *ud) { (void)i; (void)cb; (void)ud; }
-          static inline unsigned int rtmidi_get_port_count(void *m) { (void)m; return 0; }
-          static inline const char* rtmidi_get_port_name(void *m, unsigned int p) { (void)m; (void)p; return ""; }
-          echo "Created rtmidi_c.h stub with opaque struct pointers"
-          
-          # Replace USB source files with empty stubs (USB disabled on iOS)
-          for usbfile in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_microphone.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/lv2/sys_usbd.cpp"; do
-            if [ -f "$usbfile" ]; then
-              echo '// Stubbed out for iOS (USB not supported)' > "$usbfile"
-              echo "Stubbed $usbfile"
-            fi
-          done
-          
-          # Patch libusb os.cmake to support iOS
-          if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
-            sed -i '' 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
-            echo "Patched libusb os.cmake to allow iOS"
-          fi
-          
-          # Remove -Werror flags from rpcs3 CMakeLists (not valid for iOS cross-compilation)
-          for f in "$APS3E_CPP/rpcs3/rpcs3/CMakeLists.txt" "$APS3E_CPP/rpcs3/Utilities/CMakeLists.txt"; do
-            if [ -f "$f" ]; then
-              sed -i '' 's/-Werror=return-type//g; s/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g' "$f"
-              echo "Patched $f to remove -Werror flags"
-            fi
-          done
-          
-          # Patch JIT.h to suppress pthread_jit_write_protect_np unavailability (it IS available on iOS 15+)
-          if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
-            TMPJIT=$(mktemp)
-            echo '#undef __API_UNAVAILABLE' > "$TMPJIT"
-            echo '#define __API_UNAVAILABLE(...)' >> "$TMPJIT"
-            echo '#undef __API_UNAVAILABLE_MSG' >> "$TMPJIT"
-            echo '#define __API_UNAVAILABLE_MSG(...)' >> "$TMPJIT"
-            echo '#pragma clang diagnostic ignored "-Wunguarded-availability-new"' >> "$TMPJIT"
-            cat "$APS3E_CPP/rpcs3/Utilities/JIT.h" >> "$TMPJIT"
-            mv "$TMPJIT" "$APS3E_CPP/rpcs3/Utilities/JIT.h"
-            echo "Patched JIT.h to suppress availability error"
-            head -8 "$APS3E_CPP/rpcs3/Utilities/JIT.h"
-          fi
-          
-          # Create a pthread.h wrapper that strips __API_UNAVAILABLE before including the real header
-          # This is the main fix for the JIT availability error
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#undef __API_UNAVAILABLE' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#define __API_UNAVAILABLE(...)' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#undef __API_UNAVAILABLE_MSG' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#define __API_UNAVAILABLE_MSG(...)' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#include_next <pthread.h>' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo "Created pthread.h wrapper in ffmpeg_stubs"
-          cat "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          
-          # Patch ConfigureCompiler.cmake to remove ALL -Werror flags (they override our suppression flags)
-          if [ -f "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" ]; then
-            sed -i '' 's/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=return-type//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g; s/-Werror=inconsistent-missing-override//g; s/-Werror=delete-non-virtual-dtor//g' "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake"
-            echo "Patched ConfigureCompiler.cmake to remove -Werror flags"
-            grep -n "Werror" "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" || echo "No -Werror flags remaining"
-          fi
-          
-          # Replace 3rdparty/CMakeLists.txt with iOS-compatible version
-          THIRDPARTY="$APS3E_CPP/rpcs3/3rdparty/CMakeLists.txt"
-          cp "$THIRDPARTY" "${THIRDPARTY}.bak"
-          cat > "$THIRDPARTY" << 'CMAKEOF'
-          CMAKEOF
-          cmake_minimum_required(VERSION 3.22.1)
-          find_package(PkgConfig)
-          include(ExternalProject)
-          include(CMakeDependentOption)
-          set(CMAKE_CXX_STANDARD 20)
-          if(NOT MSVC)
-              add_compile_options("$<$<COMPILE_LANGUAGE:CXX,C>:-w>")
-          endif()
-          add_library(3rdparty_dummy_lib INTERFACE)
+        echo ''set(USE_NATIVE_INSTRUCTIONS OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # ZLib (use iOS SDK zlib)
-          find_package(ZLIB REQUIRED)
-          add_library(3rdparty_zlib INTERFACE)
-          target_link_libraries(3rdparty_zlib INTERFACE ZLIB::ZLIB)
-          target_compile_definitions(3rdparty_zlib INTERFACE -DZLIB_CONST=1)
+        echo ''set(USE_VULKAN OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # ZSTD
-          set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
-          set(ZSTD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-          set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-          set(ZSTD_BUILD_STATIC ON CACHE BOOL "" FORCE)
-          set(ZSTD_LEGACY_SUPPORT OFF CACHE BOOL "" FORCE)
-          set(ZSTD_MULTITHREAD_SUPPORT OFF CACHE BOOL "" FORCE)
-          add_subdirectory(zstd EXCLUDE_FROM_ALL)
+        echo ''set(USE_FAUDIO OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # 7zip sdk
-          add_subdirectory(7zip EXCLUDE_FROM_ALL)
+        echo ''set(USE_SDL OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # flatbuffers (header-only)
-          add_library(3rdparty_flatbuffers INTERFACE)
-          target_include_directories(3rdparty_flatbuffers INTERFACE flatbuffers/include)
+        echo ''set(USE_LIBEVDEV OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # libPNG
-          set(LIBPNG_TARGET 3rdparty_libpng)
-          add_subdirectory(libpng EXCLUDE_FROM_ALL)
+        echo ''set(USE_LIBUSB OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # pugixml
-          add_subdirectory(pugixml EXCLUDE_FROM_ALL)
+        echo ''set(USE_ALSA OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # yaml-cpp
-          add_subdirectory(yaml-cpp)
+        echo ''set(USE_PULSE OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # stblib
-          add_subdirectory(stblib)
+        echo ''set(USE_WOLFSSL OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # SoundTouch
-          add_subdirectory(SoundTouch EXCLUDE_FROM_ALL)
+        echo ''set(USE_OPENAL OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # glslang
-          add_subdirectory(glslang EXCLUDE_FROM_ALL)
+        echo ''set(USE_CUBEB OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # miniupnp
-          add_subdirectory(miniupnp EXCLUDE_FROM_ALL)
+        echo ''set(USE_GLLD OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # AsmJit
-          add_subdirectory(asmjit EXCLUDE_FROM_ALL)
+        echo ''set(USE_FFMPEG OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # Vulkan (disabled for iOS)
-          set(VULKAN_TARGET 3rdparty_dummy_lib)
+        echo ''set(USE_SYSTEM_GLSLANG OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # FAudio (disabled for iOS)
-          set(FAUDIO_TARGET 3rdparty_dummy_lib)
+        echo ''set(USE_SYSTEM_FFMPEG OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # SDL2 (disabled for iOS)
-          set(SDL2_TARGET 3rdparty_dummy_lib)
+        echo ''set(USE_SYSTEM_LIBUSB OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # libevdev (disabled for iOS)
-          set(LIBEVDEV_TARGET 3rdparty_dummy_lib)
+        echo ''set(USE_SYSTEM_CURL OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # Stub targets for disabled deps
-          add_library(xxhash INTERFACE)
-          add_library(usb-1.0-static INTERFACE)
-          add_library(usb-1.0-shared INTERFACE)
-          add_library(adrenotools INTERFACE)
-          add_library(3rdparty_ffmpeg INTERFACE)
-          add_library(3rdparty_glew INTERFACE)
-          add_library(3rdparty_opengl INTERFACE)
-          add_library(3rdparty_openal INTERFACE)
-          add_library(3rdparty_hidapi INTERFACE)
-          add_library(wolfssl INTERFACE)
-          add_library(3rdparty_libcurl INTERFACE)
-          add_library(3rdparty_discordRPC INTERFACE)
-          add_library(cubeb INTERFACE)
-          add_library(rtmidi INTERFACE)
-          add_library(3rdparty_llvm INTERFACE)
-          add_library(3rdparty_sdl3 INTERFACE)
-          add_library(3rdparty_protobuf INTERFACE)
-          add_library(3rdparty_vulkanmemoryallocator INTERFACE)
-          add_library(3rdparty_opencv INTERFACE)
-          add_library(3rdparty_feralinteractive INTERFACE)
+        echo ''set(USE_SYSTEM_ZLIB OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-          # ALIAS targets
-          add_library(3rdparty::zlib ALIAS 3rdparty_zlib)
-          add_library(3rdparty::zstd ALIAS 3rdparty_zstd)
-          add_library(3rdparty::7zip ALIAS 3rdparty_7zip)
-          add_library(3rdparty::flatbuffers ALIAS 3rdparty_flatbuffers)
-          add_library(3rdparty::pugixml ALIAS pugixml)
-          add_library(3rdparty::yaml-cpp ALIAS yaml-cpp)
-          add_library(3rdparty::stblib ALIAS 3rdparty_stblib)
-          add_library(3rdparty::soundtouch ALIAS soundtouch)
-          add_library(3rdparty::libpng ALIAS ${LIBPNG_TARGET})
-          add_library(3rdparty::glslang ALIAS glslang)
-          add_library(3rdparty::miniupnpc ALIAS 3rdparty_miniupnpc)
-          add_library(3rdparty::xxhash ALIAS xxhash)
-          add_library(3rdparty::libusb ALIAS usb-1.0-static)
-          add_library(3rdparty::adrenotools ALIAS adrenotools)
-          add_library(3rdparty::ffmpeg ALIAS 3rdparty_ffmpeg)
-          add_library(3rdparty::glew ALIAS 3rdparty_glew)
-          add_library(3rdparty::opengl ALIAS 3rdparty_opengl)
-          add_library(3rdparty::openal ALIAS 3rdparty_openal)
-          add_library(3rdparty::hidapi ALIAS 3rdparty_hidapi)
-          add_library(3rdparty::wolfssl ALIAS wolfssl)
-          add_library(3rdparty::libcurl ALIAS 3rdparty_libcurl)
-          add_library(3rdparty::discordRPC ALIAS 3rdparty_discordRPC)
-          add_library(3rdparty::cubeb ALIAS cubeb)
-          add_library(3rdparty::vulkan ALIAS ${VULKAN_TARGET})
-          add_library(3rdparty::faudio ALIAS ${FAUDIO_TARGET})
-          add_library(3rdparty::sdl2 ALIAS ${SDL2_TARGET})
-          add_library(3rdparty::sdl3 ALIAS 3rdparty_sdl3)
-          add_library(3rdparty::libevdev ALIAS ${LIBEVDEV_TARGET})
-          add_library(3rdparty::rtmidi ALIAS rtmidi)
-          add_library(3rdparty::llvm ALIAS 3rdparty_llvm)
-          add_library(3rdparty::protobuf ALIAS 3rdparty_protobuf)
-          add_library(3rdparty::vulkanmemoryallocator ALIAS 3rdparty_vulkanmemoryallocator)
-          add_library(3rdparty::opencv ALIAS 3rdparty_opencv)
-          add_library(3rdparty::feralinteractive ALIAS 3rdparty_feralinteractive)
-          wc -l "$THIRDPARTY"
-          
-          echo "=== Final rpcs3 structure ==="
-          ls "$APS3E_CPP/rpcs3/" | head -15
-          ls "$APS3E_CPP/rpcs3/rpcs3/" | head -15
+        echo ''set(USE_SYSTEM_ZSTD OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-      - name: Create iOS CMakeLists
-        run: |
-          APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
-          
-          cat > "$APS3E_CPP/CMakeLists.txt" << 'CMAKEEOF'
-          CMAKEEOF
-          cmake_minimum_required(VERSION 3.28)
-          project(ps3dream LANGUAGES C CXX OBJCXX)
-          
-          set(CMAKE_CXX_STANDARD 20)
-          set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-          set(CMAKE_OSX_DEPLOYMENT_TARGET 17.0)
-          set(CMAKE_OSX_ARCHITECTURES "arm64")
-          
-          # Force __API_UNAVAILABLE to empty to allow pthread_jit_write_protect_np on iOS
-          add_definitions(-DENABLE_JIT=1 -DARCH_ARM64=1 -DUNIX_POSIX=1 -D__APPLE__=1 -DAPPLE=1)
-          add_compile_options(-march=armv8-a -stdlib=libc++)
-          add_compile_options(-Wno-multichar -Wno-ignored-pragmas -Wno-attributes -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-parameter -Wno-availability -Wno-deprecated-declarations -Wno-unguarded-availability-new -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough)
-          
-          set(USE_NATIVE_INSTRUCTIONS OFF CACHE BOOL "" FORCE)
-          set(USE_VULKAN OFF CACHE BOOL "" FORCE)
-          set(USE_FAUDIO OFF CACHE BOOL "" FORCE)
-          set(USE_SDL OFF CACHE BOOL "" FORCE)
-          set(USE_LIBEVDEV OFF CACHE BOOL "" FORCE)
-          set(USE_LIBUSB OFF CACHE BOOL "" FORCE)
-          set(USE_ALSA OFF CACHE BOOL "" FORCE)
-          set(USE_PULSE OFF CACHE BOOL "" FORCE)
-          set(USE_WOLFSSL OFF CACHE BOOL "" FORCE)
-          set(USE_OPENAL OFF CACHE BOOL "" FORCE)
-          set(USE_CUBEB OFF CACHE BOOL "" FORCE)
-          set(USE_GLLD OFF CACHE BOOL "" FORCE)
-          set(USE_FFMPEG OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_GLSLANG OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_FFMPEG OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_LIBUSB OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_CURL OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_ZLIB OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_ZSTD OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_LIBPNG OFF CACHE BOOL "" FORCE)
-          set(USE_LIBUPNP OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_FFTW OFF CACHE BOOL "" FORCE)
-          set(USE_LLVM OFF CACHE BOOL "" FORCE)
-          set(USE_NATIVE_INSTRUCTIONS OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_LIBLZMA OFF CACHE BOOL "" FORCE)
-          set(BUILD_LLVM OFF CACHE BOOL "" FORCE)
-          set(USE_SYSTEM_BOOST OFF CACHE BOOL "" FORCE)
-          set(USE_VULKAN_MEM_ALLOC OFF CACHE BOOL "" FORCE)
-          
-          include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_stubs)
-          
-          add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)
-          
-          add_library(ps3dream_bridge SHARED
-            aps3e_rp3_impl.cpp
-            aps3e_emu.cpp
-            aps3e.cpp
-            vkapi.cpp
-            vkutil.cpp
-            cpuinfo.cpp
-            glsl2spv.cpp
-            meminfo.cpp
-            emulator.cpp
-            emulator_aps3e.cpp
-            rpcs3/rpcs3/Input/raw_mouse_config.cpp
-            rpcs3/rpcs3/Input/raw_mouse_handler.cpp
-            rpcs3/rpcs3/Input/product_info.cpp
-            rpcs3/rpcs3/rpcs3_version.cpp
-            rpcs3/rpcs3/stdafx.cpp
-          )
-          
-          target_include_directories(ps3dream_bridge PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}
-            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3
-            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/rpcs3
-          )
-          
-          target_link_libraries(ps3dream_bridge PRIVATE rpcs3_emu)
-          
-          find_library(METAL Metal)
-          find_library(QUARTZ_CORE QuartzCore)
-          find_library(UIKIT UIKit)
-          find_library(FOUNDATION Foundation)
-          
-          target_link_libraries(ps3dream_bridge PRIVATE
-            ${METAL} ${QUARTZ_CORE} ${UIKIT} ${FOUNDATION}
-            pthread
-          )
-          
-          set(MVK_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../../MoltenVK-build/Package/Libraries/iOS/libMoltenVK.a")
-          if(EXISTS "${MVK_LIB}")
-            target_link_libraries(ps3dream_bridge PRIVATE "${MVK_LIB}")
-          endif()
-      - name: Build emulator
-        run: |
-          APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
-          
-          cd "$APS3E_CPP"
-          rm -rf build_ios
-          mkdir build_ios && cd build_ios
-          
-          cmake .. \
-            -DCMAKE_SYSTEM_NAME=iOS \
-            -DIOS=TRUE \
-            -DANDROID=TRUE \
-            -DANDROID_PLATFORM_LEVEL=30 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 \
-            -DCMAKE_OSX_ARCHITECTURES="arm64" \
-            "-DCMAKE_C_FLAGS=-D__API_UNAVAILABLE(...)= " \
-            "-DCMAKE_CXX_FLAGS=-D__API_UNAVAILABLE(...)= " \
-            -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
-            -G Xcode
-          
-          echo "=== CMake configure done ==="
-          
-          cmake --build . --config Release -- \
-            -sdk iphoneos \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+        echo ''set(USE_SYSTEM_LIBPNG OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-      - name: Package IPA
-        run: |
-          APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
-          
-          mkdir -p Payload/Ps3Dream.app
-          
-          find "$APS3E_CPP/build_ios" \( -name "*.dylib" -o -name "*.a" \) \
-            -path "*/Release/*" -exec cp {} Payload/Ps3Dream.app/ \; 2>/dev/null || true
-          find "$APS3E_CPP/build_ios" -name "libps3dream_bridge.dylib" -exec cp {} Payload/Ps3Dream.app/ \; 2>/dev/null || true
-          find "$APS3E_CPP/build_ios" -name "*.dylib" -exec cp {} Payload/Ps3Dream.app/ \; 2>/dev/null || true
-          
-          cp Ps3Dream/Info.plist Payload/Ps3Dream.app/
-          
-          echo "=== IPA contents ==="
-          ls -la Payload/Ps3Dream.app/
-          
-          zip -r -y Ps3Dream.ipa Payload/
-          ls -lh Ps3Dream.ipa
+        echo ''set(USE_LIBUPNP OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
 
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Ps3Dream-iOS-IPA
-          path: Ps3Dream.ipa
-          retention-days: 30
+        echo ''set(USE_SYSTEM_FFTW OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''set(USE_LLVM OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''set(USE_NATIVE_INSTRUCTIONS OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''set(USE_SYSTEM_LIBLZMA OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''set(BUILD_LLVM OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''set(USE_SYSTEM_BOOST OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''set(USE_VULKAN_MEM_ALLOC OFF CACHE BOOL "" FORCE)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_stubs)''
+        >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''add_library(ps3dream_bridge SHARED'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  aps3e_rp3_impl.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  aps3e_emu.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  aps3e.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  vkapi.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  vkutil.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  cpuinfo.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  glsl2spv.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  meminfo.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  emulator.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  emulator_aps3e.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  rpcs3/rpcs3/Input/raw_mouse_config.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  rpcs3/rpcs3/Input/raw_mouse_handler.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  rpcs3/rpcs3/Input/product_info.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  rpcs3/rpcs3/rpcs3_version.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  rpcs3/rpcs3/stdafx.cpp'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo '')'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''target_include_directories(ps3dream_bridge PRIVATE'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  ${CMAKE_CURRENT_SOURCE_DIR}'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/rpcs3'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo '')'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''target_link_libraries(ps3dream_bridge PRIVATE rpcs3_emu)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''find_library(METAL Metal)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''find_library(QUARTZ_CORE QuartzCore)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''find_library(UIKIT UIKit)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''find_library(FOUNDATION Foundation)'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''target_link_libraries(ps3dream_bridge PRIVATE'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  ${METAL} ${QUARTZ_CORE} ${UIKIT} ${FOUNDATION}'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  pthread'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo '')'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''set(MVK_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../../MoltenVK-build/Package/Libraries/iOS/libMoltenVK.a")''
+        >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''if(EXISTS "${MVK_LIB}")'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''  target_link_libraries(ps3dream_bridge PRIVATE "${MVK_LIB}")'' >>
+        "$APS3E_CPP/CMakeLists.txt"
+
+        echo ''endif()'' >> "$APS3E_CPP/CMakeLists.txt"
+
+        echo "Created CMakeLists.txt"'
+    - name: Build emulator
+      run: "APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp\ncd \"$APS3E_CPP\"\
+        \nrm -rf build_ios\nmkdir build_ios && cd build_ios\ncmake .. \\\n  -DCMAKE_SYSTEM_NAME=iOS\
+        \ \\\n  -DIOS=TRUE \\\n  -DANDROID=TRUE \\\n  -DANDROID_PLATFORM_LEVEL=30\
+        \ \\\n  -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 \\\n  -DCMAKE_OSX_ARCHITECTURES=\"\
+        arm64\" \\\n  \"-DCMAKE_C_FLAGS=-D__API_UNAVAILABLE(...)= \" \\\n  \"-DCMAKE_CXX_FLAGS=-D__API_UNAVAILABLE(...)=\
+        \ \" \\\n  -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \\\n  -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY=\"\
+        \" \\\n  -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \\\n  -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO\
+        \ \\\n  -G Xcode\necho \"=== CMake configure done ===\"\ncmake --build . --config\
+        \ Release -- \\\n  -sdk iphoneos \\\n  CODE_SIGN_IDENTITY=\"\" \\\n  CODE_SIGNING_REQUIRED=NO\
+        \ \\\n  CODE_SIGNING_ALLOWED=NO"
+    - name: Package IPA
+      run: 'APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
+
+        mkdir -p Payload/Ps3Dream.app
+
+        find "$APS3E_CPP/build_ios" \( -name "*.dylib" -o -name "*.a" \) -path "*/Release/*"
+        -exec cp {} Payload/Ps3Dream.app/ \; 2>/dev/null || true
+
+        find "$APS3E_CPP/build_ios" -name "libps3dream_bridge.dylib" -exec cp {} Payload/Ps3Dream.app/
+        \; 2>/dev/null || true
+
+        find "$APS3E_CPP/build_ios" -name "*.dylib" -exec cp {} Payload/Ps3Dream.app/
+        \; 2>/dev/null || true
+
+        cp Ps3Dream/Info.plist Payload/Ps3Dream.app/
+
+        zip -r -y Ps3Dream.ipa Payload/
+
+        ls -lh Ps3Dream.ipa'
+    - name: Upload IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: Ps3Dream-iOS-IPA
+        path: Ps3Dream.ipa
+        retention-days: 30
