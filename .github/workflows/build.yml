@@ -88,6 +88,47 @@ jobs:
           rm -f "$APS3E_CPP/rpcs3/buildfiles/cmake/FindZLIB.cmake"
           echo "Deleted rpcs3 FindZLIB.cmake"
           
+          # Create stub ffmpeg headers (rsx_utils.h and video_provider.cpp include pixfmt.h unconditionally)
+          mkdir -p "$APS3E_CPP/ffmpeg_stubs/libavutil"
+          cat > "$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h" << 'STUBEOF'
+          #pragma once
+          enum AVPixelFormat {
+              AV_PIX_FMT_NONE = -1,
+              AV_PIX_FMT_YUV420P = 0,
+              AV_PIX_FMT_YUYV422 = 1,
+              AV_PIX_FMT_RGB24 = 2,
+              AV_PIX_FMT_BGR24 = 3,
+              AV_PIX_FMT_RGBA = 26,
+              AV_PIX_FMT_BGRA = 28,
+          };
+          STUBEOF
+          echo "Created ffmpeg stub pixfmt.h"
+          
+          cat > "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h" << 'STUBEOF'
+          #pragma once
+          #include <stdint.h>
+          typedef void SwsContext;
+          enum { SWS_FAST_BILINEAR = 1, SWS_BILINEAR = 2, SWS_BICUBIC = 4, SWS_POINT = 8 };
+          static inline SwsContext* sws_getContext(int sw, int sh, int sf, int dw, int dh, int df, int flags, void *a, void *b, void *c) {
+              (void)sw;(void)sh;(void)sf;(void)dw;(void)dh;(void)df;(void)flags;(void)a;(void)b;(void)c; return 0; }
+          static inline SwsContext* sws_getCachedContext(SwsContext *c, int sw, int sh, int sf, int dw, int dh, int df, int flags, void *a, void *b, void *o) {
+              (void)c;(void)sw;(void)sh;(void)sf;(void)dw;(void)dh;(void)df;(void)flags;(void)a;(void)b;(void)o; return 0; }
+          static inline int sws_scale(SwsContext *c, const uint8_t *const srcSlice[], const int srcStride[], int srcSliceY, int srcH, uint8_t *const dst[], const int dstStride[]) {
+              (void)c;(void)srcSlice;(void)srcStride;(void)srcSliceY;(void)srcH;(void)dst;(void)dstStride; return 0; }
+          static inline void sws_freeContext(SwsContext *c) { (void)c; }
+          STUBEOF
+          echo "Created ffmpeg stub swscale.h"
+          
+          cat > "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h" << 'STUBEOF'
+          #pragma once
+          #include <stdint.h>
+          static inline int av_image_fill_linesizes(int linesizes[4], int pix_fmt, int width, int align) {
+              (void)linesizes; (void)pix_fmt; (void)width; (void)align; return 0; }
+          static inline int av_image_fill_pointers(uint8_t *data[4], int pix_fmt, int height, uint8_t *ptr, const int linesizes[4]) {
+              (void)data; (void)pix_fmt; (void)height; (void)ptr; (void)linesizes; return 0; }
+          STUBEOF
+          echo "Created ffmpeg stub imgutils.h"
+          
           # Patch libusb os.cmake to support iOS
           if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
             sed -i.bak 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
@@ -278,6 +319,8 @@ jobs:
           set(BUILD_LLVM OFF CACHE BOOL "" FORCE)
           set(USE_SYSTEM_BOOST OFF CACHE BOOL "" FORCE)
           set(USE_VULKAN_MEM_ALLOC OFF CACHE BOOL "" FORCE)
+          
+          include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_stubs)
           
           add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)
           
