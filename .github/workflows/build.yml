@@ -136,11 +136,23 @@ jobs:
             echo '#define __API_UNAVAILABLE(...)' >> "$TMPJIT"
             echo '#undef __API_UNAVAILABLE_MSG' >> "$TMPJIT"
             echo '#define __API_UNAVAILABLE_MSG(...)' >> "$TMPJIT"
+            echo '#pragma clang diagnostic ignored "-Wunguarded-availability-new"' >> "$TMPJIT"
             cat "$APS3E_CPP/rpcs3/Utilities/JIT.h" >> "$TMPJIT"
             mv "$TMPJIT" "$APS3E_CPP/rpcs3/Utilities/JIT.h"
             echo "Patched JIT.h to suppress availability error"
             head -8 "$APS3E_CPP/rpcs3/Utilities/JIT.h"
           fi
+          
+          # Create a pthread.h wrapper that strips __API_UNAVAILABLE before including the real header
+          # This is the main fix for the JIT availability error
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/pthread.h"
+          echo '#undef __API_UNAVAILABLE' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
+          echo '#define __API_UNAVAILABLE(...)' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
+          echo '#undef __API_UNAVAILABLE_MSG' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
+          echo '#define __API_UNAVAILABLE_MSG(...)' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
+          echo '#include_next <pthread.h>' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
+          echo "Created pthread.h wrapper in ffmpeg_stubs"
+          cat "$APS3E_CPP/ffmpeg_stubs/pthread.h"
           
           # Patch ConfigureCompiler.cmake to remove ALL -Werror flags (they override our suppression flags)
           if [ -f "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" ]; then
