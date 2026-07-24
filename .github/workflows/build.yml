@@ -89,45 +89,31 @@ jobs:
           echo "Deleted rpcs3 FindZLIB.cmake"
           
           # Create stub ffmpeg headers (rsx_utils.h and video_provider.cpp include pixfmt.h unconditionally)
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/libavutil"
-          cat > "$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h" << 'STUBEOF'
-          #pragma once
-          enum AVPixelFormat {
-              AV_PIX_FMT_NONE = -1,
-              AV_PIX_FMT_YUV420P = 0,
-              AV_PIX_FMT_YUYV422 = 1,
-              AV_PIX_FMT_RGB24 = 2,
-              AV_PIX_FMT_BGR24 = 3,
-              AV_PIX_FMT_RGBA = 26,
-              AV_PIX_FMT_BGRA = 28,
-          };
-          STUBEOF
-          echo "Created ffmpeg stub pixfmt.h"
+          mkdir -p "$APS3E_CPP/ffmpeg_stubs/libavutil" \
+                   "$APS3E_CPP/ffmpeg_stubs/libavcodec" \
+                   "$APS3E_CPP/ffmpeg_stubs/libavformat" \
+                   "$APS3E_CPP/ffmpeg_stubs/libswscale" \
+                   "$APS3E_CPP/ffmpeg_stubs/libswresample"
           
-          cat > "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h" << 'STUBEOF'
-          #pragma once
-          #include <stdint.h>
-          typedef void SwsContext;
-          enum { SWS_FAST_BILINEAR = 1, SWS_BILINEAR = 2, SWS_BICUBIC = 4, SWS_POINT = 8 };
-          static inline SwsContext* sws_getContext(int sw, int sh, int sf, int dw, int dh, int df, int flags, void *a, void *b, void *c) {
-              (void)sw;(void)sh;(void)sf;(void)dw;(void)dh;(void)df;(void)flags;(void)a;(void)b;(void)c; return 0; }
-          static inline SwsContext* sws_getCachedContext(SwsContext *c, int sw, int sh, int sf, int dw, int dh, int df, int flags, void *a, void *b, void *o) {
-              (void)c;(void)sw;(void)sh;(void)sf;(void)dw;(void)dh;(void)df;(void)flags;(void)a;(void)b;(void)o; return 0; }
-          static inline int sws_scale(SwsContext *c, const uint8_t *const srcSlice[], const int srcStride[], int srcSliceY, int srcH, uint8_t *const dst[], const int dstStride[]) {
-              (void)c;(void)srcSlice;(void)srcStride;(void)srcSliceY;(void)srcH;(void)dst;(void)dstStride; return 0; }
-          static inline void sws_freeContext(SwsContext *c) { (void)c; }
-          STUBEOF
-          echo "Created ffmpeg stub swscale.h"
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h"
+          echo 'enum AVPixelFormat { AV_PIX_FMT_NONE=-1, AV_PIX_FMT_YUV420P=0, AV_PIX_FMT_YUYV422=1, AV_PIX_FMT_RGB24=2, AV_PIX_FMT_BGR24=3, AV_PIX_FMT_RGBA=26, AV_PIX_FMT_BGRA=28 };' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h"
           
-          cat > "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h" << 'STUBEOF'
-          #pragma once
-          #include <stdint.h>
-          static inline int av_image_fill_linesizes(int linesizes[4], int pix_fmt, int width, int align) {
-              (void)linesizes; (void)pix_fmt; (void)width; (void)align; return 0; }
-          static inline int av_image_fill_pointers(uint8_t *data[4], int pix_fmt, int height, uint8_t *ptr, const int linesizes[4]) {
-              (void)data; (void)pix_fmt; (void)height; (void)ptr; (void)linesizes; return 0; }
-          STUBEOF
-          echo "Created ffmpeg stub imgutils.h"
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
+          echo '#include <stdint.h>' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
+          echo 'typedef void SwsContext;' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
+          echo 'enum { SWS_FAST_BILINEAR=1, SWS_BILINEAR=2, SWS_BICUBIC=4, SWS_POINT=8 };' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
+          echo 'static inline SwsContext* sws_getContext(int a,int b,int c,int d,int e,int f,int g,void *h,void *i,void *j){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
+          echo 'static inline SwsContext* sws_getCachedContext(SwsContext *c,int a,int b,int d,int e,int f,int g,int h,void *i,void *j,void *k){(void)c;(void)a;(void)b;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;(void)k;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
+          echo 'static inline int sws_scale(SwsContext *c,const uint8_t *const a[],const int b[],int d,int e,uint8_t *const f[],const int g[]){(void)c;(void)a;(void)b;(void)d;(void)e;(void)f;(void)g;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
+          echo 'static inline void sws_freeContext(SwsContext *c){(void)c;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
+          
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
+          echo '#include <stdint.h>' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
+          echo 'static inline int av_image_fill_linesizes(int a[],int b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
+          echo 'static inline int av_image_fill_pointers(uint8_t *a[],int b,int c,uint8_t *d,const int e[]){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
+          
+          echo "Created ffmpeg stub headers"
+          ls -la "$APS3E_CPP/ffmpeg_stubs/libavutil/" "$APS3E_CPP/ffmpeg_stubs/libswscale/"
           
           # Patch libusb os.cmake to support iOS
           if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
