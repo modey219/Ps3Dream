@@ -512,7 +512,7 @@ jobs:
           set(CMAKE_OSX_DEPLOYMENT_TARGET 17.0)
           set(CMAKE_OSX_ARCHITECTURES "arm64")
           
-          add_definitions(-DENABLE_JIT=1 -DARCH_ARM64=1 -DUNIX_POSIX=1 -D__APPLE__=1 -DAPPLE=1 -DZLIB_CONST=1)
+          add_definitions(-DENABLE_JIT=1 -DARCH_ARM64=1 -DUNIX_POSIX=1 -D__APPLE__=1 -DAPPLE=1 -DZLIB_CONST=1 -DSOUNDTOUCH_NO_EXCEPTIONS)
           add_compile_options(-march=armv8-a -stdlib=libc++)
           add_compile_options(-Wno-multichar -Wno-ignored-pragmas -Wno-attributes -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-parameter -Wno-availability -Wno-deprecated-declarations -Wno-unguarded-availability-new -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough -Wno-error=incompatible-pointer-types-discards-qualifiers -Wno-error=deprecated-declarations -Wno-error=non-pod-varargs -Wno-error=bitwise-instead-of-logical -Wno-error=deprecated-copy -Wno-error=tautological-compare -Wno-error=implicit-function-declaration -Wno-error=return-type-c-linkage -Wno-error=c++11-narrowing -Wno-error=uninitialized -Wno-error=register -Wno-error=microsoft-anon-tag -Wno-error=overloaded-virtual)
           
