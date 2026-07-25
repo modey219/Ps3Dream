@@ -534,7 +534,7 @@ jobs:
           set(USE_VULKAN_MEM_ALLOC OFF CACHE BOOL "" FORCE)
           
           include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_stubs)
-          include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/yaml-cpp/include)
+          include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/yaml-cpp/yaml-cpp/include)
           include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/pugixml/src)
           include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/stblib)
           include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/flatbuffers/include)
@@ -547,7 +547,7 @@ jobs:
           
           # Add 3rdparty include dirs directly to rpcs3_emu (include_directories doesn't propagate with Xcode generator)
           target_include_directories(rpcs3_emu PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/yaml-cpp/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/yaml-cpp/yaml-cpp/include
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/pugixml/src
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/stblib
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/flatbuffers/include
