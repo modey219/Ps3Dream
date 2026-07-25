@@ -346,6 +346,18 @@ jobs:
             sed -i '' 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
           fi
           
+          # Patch Emu/CMakeLists.txt - remove NP sources (need protobuf, curl, wolfssl)
+          EMU_CMAKE="$APS3E_CPP/rpcs3/rpcs3/Emu/CMakeLists.txt"
+          if [ -f "$EMU_CMAKE" ]; then
+            # Remove the entire NP sources block
+            sed -i '' '/^# Np$/,/^  )$/{ /^  )$/!d; /^  )$/d; }' "$EMU_CMAKE"
+            # Also remove NP-related link libs
+            sed -i '' '/3rdparty::wolfssl/d; /3rdparty::protobuf/d; /3rdparty::libcurl/d; /3rdparty::miniupnpc/d' "$EMU_CMAKE"
+            # Remove sceNp modules that reference NP headers
+            sed -i '' '/sceNp2\.cpp/d; /sceNpClans\.cpp/d; /sceNpCommerce2\.cpp/d; /sceNp\.cpp/d; /sceNpMatchingInt\.cpp/d; /sceNpPlus\.cpp/d; /sceNpSns\.cpp/d; /sceNpTrophy\.cpp/d; /sceNpTus\.cpp/d; /sceNpUtil\.cpp/d; /cellSysutilNpEula\.cpp/d' "$EMU_CMAKE"
+            echo "Patched Emu/CMakeLists.txt to remove NP sources"
+          fi
+          
           # Remove -Werror flags
           for f in "$APS3E_CPP/rpcs3/rpcs3/CMakeLists.txt" "$APS3E_CPP/rpcs3/Utilities/CMakeLists.txt"; do
             if [ -f "$f" ]; then
