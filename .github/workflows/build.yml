@@ -244,7 +244,8 @@ jobs:
           static inline CURLcode curl_easy_perform(CURL* c){(void)c;return 0;}
           static inline CURLcode curl_easy_getinfo(CURL* c, CURLINFO i, ...){(void)c;(void)i;return 0;}
           static inline const char* curl_easy_strerror(CURLcode c){(void)c;return "stub";}
-          static inline struct curl_slist { struct curl_slist *next; char *data; } *curl_slist_append(struct curl_slist *l, const char *s){(void)l;(void)s;return 0;}
+          struct curl_slist { struct curl_slist *next; char *data; };
+          static inline struct curl_slist* curl_slist_append(struct curl_slist *l, const char *s){(void)l;(void)s;return 0;}
           static inline void curl_slist_free_all(struct curl_slist *l){(void)l;}
           static inline CURLM* curl_multi_init(void){return 0;}
           static inline CURLMcode curl_multi_cleanup(CURLM* m){(void)m;return 0;}
