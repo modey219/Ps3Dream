@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <string>
+#include <vector>
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #include <mach/mach.h>

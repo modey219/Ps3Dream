@@ -9,6 +9,13 @@ class Ps3DreamApp: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
+        // Initialize the emulator manager
+        _ = EmulatorManager.shared
+        _ = AppSettings.shared
+
+        // Try to enable JIT on launch
+        ios_enable_jit()
+
         window = UIWindow(frame: UIScreen.main.bounds)
         let nav = UINavigationController(rootViewController: GameListViewController())
         nav.navigationBar.prefersLargeTitles = true
