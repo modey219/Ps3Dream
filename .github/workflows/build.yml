@@ -549,7 +549,7 @@ jobs:
           target_include_directories(rpcs3_emu PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/yaml-cpp/yaml-cpp/include
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/pugixml/src
-            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/stblib
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/stblib/stb
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/flatbuffers/include
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/SoundTouch/include
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/zstd/lib
@@ -559,7 +559,7 @@ jobs:
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/7zip/C
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/miniupnp/miniupnpc
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/miniupnp/upnpsoap
-            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/stblib
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/stblib/stb
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty
           )
           
