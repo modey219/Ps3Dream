@@ -545,6 +545,22 @@ jobs:
           
           add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)
           
+          # Add 3rdparty include dirs directly to rpcs3_emu (include_directories doesn't propagate with Xcode generator)
+          target_include_directories(rpcs3_emu PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/yaml-cpp/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/pugixml/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/stblib
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/flatbuffers/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/SoundTouch/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/zstd/lib
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/asmjit/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/glslang
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/libpng
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/7zip/C
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/miniupnp/miniupnpc
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/miniupnp/upnpsoap
+          )
+          
           # Repo root is 6 levels up from aps3e-extracted/aps3e-2.40/app/src/main/cpp
           # cpp -> main -> src -> app -> 2.40 -> aps3e-extracted -> repo_root
           set(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..")
