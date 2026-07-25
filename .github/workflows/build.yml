@@ -405,18 +405,17 @@ jobs:
           echo '#include_next <pthread.h>' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
           
           # Create miniupnp stub headers (UPnP disabled but headers still included)
-          cat > "$APS3E_CPP/ffmpeg_stubs/miniupnpc.h" << 'MINIUPNP'
-#pragma once
-typedef struct { int dummy; } UPNPUrls;
-typedef struct { int dummy; } IGDdatas;
-static inline int upnpDiscover(int t, const char *a, const char *b, int c, int d, int *e){(void)t;(void)a;(void)b;(void)c;(void)d;(void)e;return -1;}
-static inline int UPNP_GetValidIGD(void *a, UPNPUrls *b, IGDdatas *c, char *d, int e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
-static inline int UPNP_GetInternalIPAddress(UPNPUrls *a, IGDdatas *b, char *c, int d){(void)a;(void)b;(void)c;(void)d;return 0;}
-static inline int UPNP_DeletePortMapping(UPNPUrls *a, IGDdatas *b, const char *c, const char *d, const char *e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
-static inline int UPNP_AddPortMapping(UPNPUrls *a, IGDdatas *b, const char *c, const char *d, const char *e, const char *f, const char *g, int h){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;return 0;}
-static inline void freeUPNPUrls(UPNPUrls *a){(void)a;}
-MINIUPNP
-          cp "$APS3E_CPP/ffmpeg_stubs/miniupnpc.h" "$APS3E_CPP/ffmpeg_stubs/miniupnperrors.h"
+          MINIFILE="$APS3E_CPP/ffmpeg_stubs/miniupnpc.h"
+          echo '#pragma once' > "$MINIFILE"
+          echo 'typedef struct { int dummy; } UPNPUrls;' >> "$MINIFILE"
+          echo 'typedef struct { int dummy; } IGDdatas;' >> "$MINIFILE"
+          echo 'static inline int upnpDiscover(int t, const char *a, const char *b, int c, int d, int *e){(void)t;(void)a;(void)b;(void)c;(void)d;(void)e;return -1;}' >> "$MINIFILE"
+          echo 'static inline int UPNP_GetValidIGD(void *a, UPNPUrls *b, IGDdatas *c, char *d, int e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}' >> "$MINIFILE"
+          echo 'static inline int UPNP_GetInternalIPAddress(UPNPUrls *a, IGDdatas *b, char *c, int d){(void)a;(void)b;(void)c;(void)d;return 0;}' >> "$MINIFILE"
+          echo 'static inline int UPNP_DeletePortMapping(UPNPUrls *a, IGDdatas *b, const char *c, const char *d, const char *e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}' >> "$MINIFILE"
+          echo 'static inline int UPNP_AddPortMapping(UPNPUrls *a, IGDdatas *b, const char *c, const char *d, const char *e, const char *f, const char *g, int h){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;return 0;}' >> "$MINIFILE"
+          echo 'static inline void freeUPNPUrls(UPNPUrls *a){(void)a;}' >> "$MINIFILE"
+          cp "$MINIFILE" "$APS3E_CPP/ffmpeg_stubs/miniupnperrors.h"
           
           # Patch ConfigureCompiler.cmake
           if [ -f "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" ]; then
