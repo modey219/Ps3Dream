@@ -99,13 +99,77 @@ jobs:
           
           echo "Created ffmpeg stub headers"
           
-          # Create stub libusb.h
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_context;' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_device;' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'struct libusb_device_handle;' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline int libusb_init(void **c){(void)c;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
-          echo 'static inline void libusb_exit(void *c){(void)c;}' >> "$APS3E_CPP/ffmpeg_stubs/libusb.h"
+          # Create stub libusb.h (full types needed by rpcs3 usb_device.h)
+          cat > "$APS3E_CPP/ffmpeg_stubs/libusb.h" << 'LIBUSB_EOF'
+          #pragma once
+          #include <stdint.h>
+          struct libusb_context;
+          struct libusb_device;
+          struct libusb_device_handle;
+          struct libusb_device_descriptor {
+              unsigned short idVendor;
+              unsigned short idProduct;
+              unsigned short bcdDevice;
+              unsigned char bDeviceClass;
+              unsigned char bDeviceSubClass;
+              unsigned char bDeviceProtocol;
+              unsigned char bNumConfigurations;
+              unsigned char bNumEndpoints;
+          };
+          struct libusb_config_descriptor {
+              unsigned short wTotalLength;
+              unsigned char bNumInterfaces;
+              unsigned char bConfigurationValue;
+              unsigned char iConfiguration;
+              unsigned char bmAttributes;
+              unsigned char MaxPower;
+          };
+          struct libusb_interface {
+              unsigned char num_altsetting;
+          };
+          struct libusb_endpoint_descriptor {
+              unsigned char bEndpointAddress;
+              unsigned char bmAttributes;
+              unsigned short wMaxPacketSize;
+              unsigned char bInterval;
+          };
+          struct libusb_interface_descriptor {
+              unsigned char bInterfaceNumber;
+              unsigned char bNumEndpoints;
+              unsigned char bInterfaceClass;
+          };
+          struct libusb_transfer {
+              unsigned int num_iso_packets;
+          };
+          struct libusb_iso_packet_descriptor {
+              unsigned int length;
+              unsigned int actual_length;
+              int status;
+          };
+          enum libusb_error { LIBUSB_SUCCESS=0, LIBUSB_ERROR_IO=-1, LIBUSB_ERROR_INVALID_PARAM=-2, LIBUSB_ERROR_ACCESS=-3, LIBUSB_ERROR_NO_DEVICE=-4, LIBUSB_ERROR_NOT_FOUND=-5, LIBUSB_ERROR_BUSY=-6, LIBUSB_ERROR_TIMEOUT=-7, LIBUSB_ERROR_OVERFLOW=-8, LIBUSB_ERROR_PIPE=-9 };
+          enum libusb_transfer_type { LIBUSB_TRANSFER_TYPE_CONTROL=0, LIBUSB_TRANSFER_TYPE_ISOCHRONOUS=1, LIBUSB_TRANSFER_TYPE_BULK=2, LIBUSB_TRANSFER_TYPE_INTERRUPT=3 };
+          static inline int libusb_init(void **c){(void)c;return 0;}
+          static inline void libusb_exit(void *c){(void)c;}
+          static inline int libusb_get_device_list(void *c,void **l){(void)c;(void)l;return 0;}
+          static inline void libusb_free_device_list(void **l,int u){(void)l;(void)u;}
+          static inline int libusb_get_device_descriptor(void *d,void *dd){(void)d;(void)dd;return 0;}
+          static inline int libusb_get_config_descriptor(void *d,int i,void **cd){(void)d;(void)i;(void)cd;return 0;}
+          static inline void libusb_free_config_descriptor(void *cd){(void)cd;}
+          static inline int libusb_open(void *d,void **dh){(void)d;(void)dh;return 0;}
+          static inline void libusb_close(void *dh){(void)dh;}
+          static inline int libusb_claim_interface(void *dh,int i){(void)dh;(void)i;return 0;}
+          static inline int libusb_release_interface(void *dh,int i){(void)dh;(void)i;return 0;}
+          static inline int libusb_bulk_transfer(void *dh,unsigned char ep,unsigned char *d,int l,int *a,unsigned int t){(void)dh;(void)ep;(void)d;(void)l;(void)a;(void)t;return 0;}
+          static inline int libusb_control_transfer(void *dh,unsigned char rt,unsigned char r,unsigned short wv,unsigned short wi,unsigned char *d,unsigned short l,unsigned int t){(void)dh;(void)rt;(void)r;(void)wv;(void)wi;(void)d;(void)l;(void)t;return 0;}
+          static inline int libusb_get_string_descriptor_ascii(void *dh,unsigned char si,unsigned char *d,int l){(void)dh;(void)si;(void)d;(void)l;return 0;}
+          static inline int libusb_set_interface_alt_setting(void *dh,int i,int a){(void)dh;(void)i;(void)a;return 0;}
+          static inline void libusb_free_transfer(void *t){(void)t;}
+          static inline struct libusb_transfer* libusb_alloc_transfer(int i){(void)i;return 0;}
+          static inline int libusb_submit_transfer(void *t){(void)t;return 0;}
+          static inline int libusb_cancel_transfer(void *t){(void)t;return 0;}
+          static inline const char* libusb_error_name(int e){(void)e;return "stub";}
+          static inline const char* libusb_strerror(int e){(void)e;return "stub";}
+          LIBUSB_EOF
           
           mkdir -p "$APS3E_CPP/ffmpeg_stubs/libusb-1.0"
           cp "$APS3E_CPP/ffmpeg_stubs/libusb.h" "$APS3E_CPP/ffmpeg_stubs/libusb-1.0/libusb.h"
