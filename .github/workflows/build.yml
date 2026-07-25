@@ -120,6 +120,14 @@ jobs:
           echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavformat/avformat.h"
           echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libswresample/swresample.h"
           
+          # Additional libavutil headers
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/dict.h"
+          echo 'typedef struct AVDictionary { int dummy; } AVDictionary;' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/dict.h"
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/channel_layout.h"
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/samplefmt.h"
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/mathematics.h"
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/error.h"
+          
           echo "Created ffmpeg stub headers"
           
           # Create stub libusb.h (comprehensive types needed by rpcs3)
