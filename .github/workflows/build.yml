@@ -404,6 +404,20 @@ jobs:
           echo '#define __API_UNAVAILABLE_MSG(...)' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
           echo '#include_next <pthread.h>' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
           
+          # Create miniupnp stub headers (UPnP disabled but headers still included)
+          cat > "$APS3E_CPP/ffmpeg_stubs/miniupnpc.h" << 'MINIUPNP'
+#pragma once
+typedef struct { int dummy; } UPNPUrls;
+typedef struct { int dummy; } IGDdatas;
+static inline int upnpDiscover(int t, const char *a, const char *b, int c, int d, int *e){(void)t;(void)a;(void)b;(void)c;(void)d;(void)e;return -1;}
+static inline int UPNP_GetValidIGD(void *a, UPNPUrls *b, IGDdatas *c, char *d, int e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
+static inline int UPNP_GetInternalIPAddress(UPNPUrls *a, IGDdatas *b, char *c, int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+static inline int UPNP_DeletePortMapping(UPNPUrls *a, IGDdatas *b, const char *c, const char *d, const char *e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
+static inline int UPNP_AddPortMapping(UPNPUrls *a, IGDdatas *b, const char *c, const char *d, const char *e, const char *f, const char *g, int h){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;return 0;}
+static inline void freeUPNPUrls(UPNPUrls *a){(void)a;}
+MINIUPNP
+          cp "$APS3E_CPP/ffmpeg_stubs/miniupnpc.h" "$APS3E_CPP/ffmpeg_stubs/miniupnperrors.h"
+          
           # Patch ConfigureCompiler.cmake
           if [ -f "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" ]; then
             sed -i '' 's/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=return-type//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g; s/-Werror=inconsistent-missing-override//g; s/-Werror=delete-non-virtual-dtor//g' "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake"
