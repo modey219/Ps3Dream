@@ -223,7 +223,32 @@ jobs:
           static inline int libusb_set_auto_detach_kernel_driver(libusb_device_handle *dh, int e){(void)dh;(void)e;return 0;}
           LIBUSB_EOF
           
-          # Create stub wolfssl headers
+          # Create stub curl header
+          mkdir -p "$APS3E_CPP/ffmpeg_stubs/curl"
+          cat > "$APS3E_CPP/ffmpeg_stubs/curl/curl.h" << 'CURLEOF'
+          #pragma once
+          typedef void CURL;
+          typedef int CURLcode;
+          typedef int CURLoption;
+          typedef int CURLINFO;
+          typedef void CURLM;
+          typedef int CURLMcode;
+          typedef int (*curl_write_callback)(char*, size_t, size_t, void*);
+          typedef int (*curl_progress_callback)(void*, double, double, double, double);
+          enum { CURLE_OK=0, CURLE_FAILED_INIT=-1 };
+          enum { CURLOPT_URL=10002, CURLOPT_WRITEFUNCTION=20011, CURLOPT_WRITEDATA=10001, CURLOPT_POSTFIELDS=60, CURLOPT_POST=47, CURLOPT_HTTPHEADER=10023, CURLOPT_SSL_VERIFYPEER=64, CURLOPT_SSL_VERIFYHOST=81, CURLOPT_TIMEOUT=13, CURLOPT_CONNECTTIMEOUT=78, CURLOPT_FOLLOWLOCATION=52, CURLOPT_PROGRESSFUNCTION=20056, CURLOPT_PROGRESSDATA=10057, CURLOPT_NOPROGRESS=43 };
+          enum { CURLINFO_RESPONSE_CODE=2097154 };
+          static inline CURL* curl_easy_init(void){return 0;}
+          static inline void curl_easy_cleanup(CURL* c){(void)c;}
+          static inline CURLcode curl_easy_setopt(CURL* c, CURLoption o, ...){(void)c;(void)o;return 0;}
+          static inline CURLcode curl_easy_perform(CURL* c){(void)c;return 0;}
+          static inline CURLcode curl_easy_getinfo(CURL* c, CURLINFO i, ...){(void)c;(void)i;return 0;}
+          static inline const char* curl_easy_strerror(CURLcode c){(void)c;return "stub";}
+          static inline struct curl_slist { struct curl_slist *next; char *data; } *curl_slist_append(struct curl_slist *l, const char *s){(void)l;(void)s;return 0;}
+          static inline void curl_slist_free_all(struct curl_slist *l){(void)l;}
+          static inline CURLM* curl_multi_init(void){return 0;}
+          static inline CURLMcode curl_multi_cleanup(CURLM* m){(void)m;return 0;}
+          CURLEOF
           mkdir -p "$APS3E_CPP/ffmpeg_stubs/wolfssl"
           cat > "$APS3E_CPP/ffmpeg_stubs/wolfssl/ssl.h" << 'WOLFEOF'
           #pragma once
