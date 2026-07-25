@@ -99,10 +99,29 @@ jobs:
           
           echo "Created ffmpeg stub headers"
           
-          # Create stub libusb.h (full types needed by rpcs3 usb_device.h)
+          # Create stub libusb.h (comprehensive types needed by rpcs3)
           cat > "$APS3E_CPP/ffmpeg_stubs/libusb.h" << 'LIBUSB_EOF'
           #pragma once
           #include <stdint.h>
+          #include <stddef.h>
+          #include <stdlib.h>
+          #define LIBUSB_API_VERSION 0x01000102
+          #define LIBUSB_CALL
+          #define LIBUSB_CONTROL_SETUP_SIZE 8
+          #define LIBUSB_MAX_ISO_PACKETS 32
+          #define LIBUSB_HOTPLUG_MATCH_ANY -1
+          #define LIBUSB_REQUEST_TYPE_STANDARD 0
+          #define LIBUSB_REQUEST_TYPE_CLASS 0x20
+          #define LIBUSB_REQUEST_TYPE_VENDOR 0x40
+          #define LIBUSB_REQUEST_TYPE_RESERVED 0xC0
+          #define LIBUSB_ENDPOINT_DIR_MASK 0x80
+          #define LIBUSB_ENDPOINT_IN 0x80
+          #define LIBUSB_ENDPOINT_OUT 0x00
+          #define LIBUSB_RECIPIENT_DEVICE 0
+          #define LIBUSB_RECIPIENT_INTERFACE 1
+          #define LIBUSB_RECIPIENT_ENDPOINT 2
+          #define LIBUSB_RECIPIENT_OTHER 3
+          #define LIBUSB_REQUEST_SET_CONFIGURATION 9
           struct libusb_context;
           struct libusb_device;
           struct libusb_device_handle;
@@ -138,17 +157,41 @@ jobs:
               unsigned char bNumEndpoints;
               unsigned char bInterfaceClass;
           };
-          struct libusb_transfer {
-              unsigned int num_iso_packets;
-          };
           struct libusb_iso_packet_descriptor {
               unsigned int length;
               unsigned int actual_length;
               int status;
           };
+          struct libusb_transfer {
+              int type;
+              int status;
+              int actual_length;
+              unsigned char *buffer;
+              void *user_data;
+              int num_iso_packets;
+              struct libusb_iso_packet_descriptor iso_packet_desc[LIBUSB_MAX_ISO_PACKETS];
+          };
           enum libusb_error { LIBUSB_SUCCESS=0, LIBUSB_ERROR_IO=-1, LIBUSB_ERROR_INVALID_PARAM=-2, LIBUSB_ERROR_ACCESS=-3, LIBUSB_ERROR_NO_DEVICE=-4, LIBUSB_ERROR_NOT_FOUND=-5, LIBUSB_ERROR_BUSY=-6, LIBUSB_ERROR_TIMEOUT=-7, LIBUSB_ERROR_OVERFLOW=-8, LIBUSB_ERROR_PIPE=-9 };
           enum libusb_transfer_type { LIBUSB_TRANSFER_TYPE_CONTROL=0, LIBUSB_TRANSFER_TYPE_ISOCHRONOUS=1, LIBUSB_TRANSFER_TYPE_BULK=2, LIBUSB_TRANSFER_TYPE_INTERRUPT=3 };
+          enum libusb_transfer_status { LIBUSB_TRANSFER_COMPLETED=0, LIBUSB_TRANSFER_ERROR=-1, LIBUSB_TRANSFER_TIMED_OUT=-2, LIBUSB_TRANSFER_CANCELLED=-3, LIBUSB_TRANSFER_STALL=-4, LIBUSB_TRANSFER_NO_DEVICE=-5, LIBUSB_TRANSFER_OVERFLOW=-6 };
+          enum libusb_log_level { LIBUSB_LOG_LEVEL_ERROR=0, LIBUSB_LOG_LEVEL_WARNING=1, LIBUSB_LOG_LEVEL_INFO=2, LIBUSB_LOG_LEVEL_DEBUG=3 };
+          enum libusb_hotplug_event { LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED=1, LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT=2 };
+          enum libusb_hotplug_flag { LIBUSB_HOTPLUG_NO_EVENTS=0, LIBUSB_HOTPLUG_ENUM_EVENTS=1, LIBUSB_HOTPLUG_ENUM_ALL=2 };
+          enum libusb_capability { LIBUSB_CAP_HAS_HOTPLUG=0x0101 };
+          enum libusb_option { LIBUSB_OPTION_LOG_LEVEL=0, LIBUSB_OPTION_LOG_CB=1 };
+          typedef int libusb_hotplug_callback_handle;
+          typedef int (*libusb_hotplug_callback_fn)(libusb_context*, libusb_device*, libusb_hotplug_event, void*);
+          typedef void (*libusb_log_cb)(libusb_context*, libusb_log_level, const char*);
+          union libusb_init_option_value {
+              int ival;
+              libusb_log_cb log_cbval;
+          };
+          struct libusb_init_option {
+              enum libusb_option option;
+              union libusb_init_option_value value;
+          };
           static inline int libusb_init(void **c){(void)c;return 0;}
+          static inline int libusb_init_context(void **c, struct libusb_init_option *o, int cnt){(void)c;(void)o;(void)cnt;return 0;}
           static inline void libusb_exit(void *c){(void)c;}
           static inline int libusb_get_device_list(void *c,void **l){(void)c;(void)l;return 0;}
           static inline void libusb_free_device_list(void **l,int u){(void)l;(void)u;}
@@ -169,6 +212,14 @@ jobs:
           static inline int libusb_cancel_transfer(void *t){(void)t;return 0;}
           static inline const char* libusb_error_name(int e){(void)e;return "stub";}
           static inline const char* libusb_strerror(int e){(void)e;return "stub";}
+          static inline int libusb_handle_events_timeout_completed(void *c, void *tv, int *completed){(void)c;(void)tv;(void)completed;return 0;}
+          static inline int libusb_has_capability(unsigned int c){(void)c;return 0;}
+          static inline int libusb_hotplug_register_callback(void *c, int ev, int fl, int vid, int pid, int cls, libusb_hotplug_callback_fn cb, void *ud, libusb_hotplug_callback_handle *h){(void)c;(void)ev;(void)fl;(void)vid;(void)pid;(void)cls;(void)cb;(void)ud;(void)h;return 0;}
+          static inline void libusb_hotplug_deregister_callback(void *c, libusb_hotplug_callback_handle h){(void)c;(void)h;}
+          static inline unsigned char libusb_get_port_number(void *d){(void)d;return 0;}
+          static inline unsigned char libusb_get_device_address(void *d){(void)d;return 0;}
+          static inline void libusb_ref_device(void *d){(void)d;}
+          static inline int libusb_set_auto_detach_kernel_driver(void *dh, int e){(void)dh;(void)e;return 0;}
           LIBUSB_EOF
           
           mkdir -p "$APS3E_CPP/ffmpeg_stubs/libusb-1.0"
@@ -223,9 +274,11 @@ jobs:
           # Create stub rtmidi
           cat > "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" << 'RTMIDI'
           #pragma once
-          typedef void RtMidiInPtr;
-          typedef void RtMidiOutPtr;
+          struct _RtMidiWrapper;
+          typedef struct _RtMidiWrapper* RtMidiInPtr;
+          typedef struct _RtMidiWrapper* RtMidiOutPtr;
           static inline RtMidiInPtr rtmidi_in_create_default(void){return 0;}
+          static inline void rtmidi_close_in(void *p){(void)p;}
           RTMIDI
           cp "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" "$APS3E_CPP/ffmpeg_stubs/rtmidi.h"
           
