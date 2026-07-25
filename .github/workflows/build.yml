@@ -97,6 +97,29 @@ jobs:
           echo 'static inline int av_image_fill_linesizes(int a[],int b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
           echo 'static inline int av_image_fill_pointers(uint8_t *a[],int b,int c,uint8_t *d,const int e[]){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
           
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo '#include <stdint.h>' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'typedef struct AVCodecContext AVCodecContext;' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'typedef struct AVCodec AVCodec;' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'typedef struct AVPacket AVPacket;' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'typedef struct AVFrame AVFrame;' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'enum { AV_CODEC_ID_NONE=0, AV_CODEC_ID_H264=27, AV_CODEC_ID_HEVC=173, AV_CODEC_ID_VP8=139, AV_CODEC_ID_VP9=167 };' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'enum { AV_INPUT_BUFFER_PADDING_SIZE=32 };' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline AVCodecContext *avcodec_alloc_context3(const AVCodec *c){(void)c;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline int avcodec_open2(AVCodecContext *a,const AVCodec *b,void **c){(void)a;(void)b;(void)c;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline int avcodec_send_packet(AVCodecContext *a,const AVPacket *b){(void)a;(void)b;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline int avcodec_receive_frame(AVCodecContext *a,AVFrame *b){(void)a;(void)b;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline const AVCodec *avcodec_find_decoder(int id){(void)id;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline void avcodec_free_context(AVCodecContext **a){(void)a;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline AVPacket *av_packet_alloc(void){return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline void av_packet_free(AVPacket **a){(void)a;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline AVFrame *av_frame_alloc(void){return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline void av_frame_free(AVFrame **a){(void)a;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          echo 'static inline void avcodec_flush_buffers(AVCodecContext *a){(void)a;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavformat/avformat.h"
+          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libswresample/swresample.h"
+          
           echo "Created ffmpeg stub headers"
           
           # Create stub libusb.h (comprehensive types needed by rpcs3)
