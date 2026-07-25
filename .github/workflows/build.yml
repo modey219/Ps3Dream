@@ -358,18 +358,22 @@ jobs:
           
           add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)
           
+          # Repo root is 6 levels up from aps3e-extracted/aps3e-2.40/app/src/main/cpp
+          # cpp -> main -> src -> app -> 2.40 -> aps3e-extracted -> repo_root
+          set(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..")
+          
           # Ps3Dream native library (Objective-C++ bridge + platform + JIT + MVK)
           add_library(ps3dream_native STATIC
             # Bridge
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/Bridge/Ps3DreamBridge.mm
+            ${REPO_ROOT}/Ps3Dream/Bridge/Ps3DreamBridge.mm
             # Platform
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/Platform/ios_window.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/Platform/ios_cpuinfo.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/Platform/ios_meminfo.cpp
+            ${REPO_ROOT}/Ps3Dream/Platform/ios_window.cpp
+            ${REPO_ROOT}/Ps3Dream/Platform/ios_cpuinfo.cpp
+            ${REPO_ROOT}/Ps3Dream/Platform/ios_meminfo.cpp
             # JIT
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/JIT/ios_jit.cpp
+            ${REPO_ROOT}/Ps3Dream/JIT/ios_jit.cpp
             # MoltenVK
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/MoltenVK/ios_mvk.cpp
+            ${REPO_ROOT}/Ps3Dream/MoltenVK/ios_mvk.cpp
             # APS3E sources
             aps3e_rp3_impl.cpp
             aps3e_emu.cpp
@@ -392,11 +396,11 @@ jobs:
             ${CMAKE_CURRENT_SOURCE_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/rpcs3
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/Platform
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/JIT
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/MoltenVK
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream/Bridge
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../Ps3Dream
+            ${REPO_ROOT}/Ps3Dream/Platform
+            ${REPO_ROOT}/Ps3Dream/JIT
+            ${REPO_ROOT}/Ps3Dream/MoltenVK
+            ${REPO_ROOT}/Ps3Dream/Bridge
+            ${REPO_ROOT}/Ps3Dream
           )
           
           target_link_libraries(ps3dream_native PRIVATE rpcs3_emu)
@@ -412,7 +416,7 @@ jobs:
             pthread dl
           )
           
-          set(MVK_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../../MoltenVK-build/Package/Libraries/iOS/libMoltenVK.a")
+          set(MVK_LIB "${REPO_ROOT}/MoltenVK-build/Package/Libraries/iOS/libMoltenVK.a")
           if(EXISTS "${MVK_LIB}")
             target_link_libraries(ps3dream_native PRIVATE "${MVK_LIB}")
           endif()
