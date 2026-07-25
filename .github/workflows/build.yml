@@ -105,6 +105,7 @@ jobs:
           #include <stdint.h>
           #include <stddef.h>
           #include <stdlib.h>
+          #include <sys/time.h>
           #define LIBUSB_API_VERSION 0x01000102
           #define LIBUSB_CALL
           #define LIBUSB_CONTROL_SETUP_SIZE 8
@@ -190,36 +191,36 @@ jobs:
               enum libusb_option option;
               union libusb_init_option_value value;
           };
-          static inline int libusb_init(void **c){(void)c;return 0;}
-          static inline int libusb_init_context(void **c, struct libusb_init_option *o, int cnt){(void)c;(void)o;(void)cnt;return 0;}
-          static inline void libusb_exit(void *c){(void)c;}
-          static inline int libusb_get_device_list(void *c,void **l){(void)c;(void)l;return 0;}
-          static inline void libusb_free_device_list(void **l,int u){(void)l;(void)u;}
-          static inline int libusb_get_device_descriptor(void *d,void *dd){(void)d;(void)dd;return 0;}
-          static inline int libusb_get_config_descriptor(void *d,int i,void **cd){(void)d;(void)i;(void)cd;return 0;}
-          static inline void libusb_free_config_descriptor(void *cd){(void)cd;}
-          static inline int libusb_open(void *d,void **dh){(void)d;(void)dh;return 0;}
-          static inline void libusb_close(void *dh){(void)dh;}
-          static inline int libusb_claim_interface(void *dh,int i){(void)dh;(void)i;return 0;}
-          static inline int libusb_release_interface(void *dh,int i){(void)dh;(void)i;return 0;}
-          static inline int libusb_bulk_transfer(void *dh,unsigned char ep,unsigned char *d,int l,int *a,unsigned int t){(void)dh;(void)ep;(void)d;(void)l;(void)a;(void)t;return 0;}
-          static inline int libusb_control_transfer(void *dh,unsigned char rt,unsigned char r,unsigned short wv,unsigned short wi,unsigned char *d,unsigned short l,unsigned int t){(void)dh;(void)rt;(void)r;(void)wv;(void)wi;(void)d;(void)l;(void)t;return 0;}
-          static inline int libusb_get_string_descriptor_ascii(void *dh,unsigned char si,unsigned char *d,int l){(void)dh;(void)si;(void)d;(void)l;return 0;}
-          static inline int libusb_set_interface_alt_setting(void *dh,int i,int a){(void)dh;(void)i;(void)a;return 0;}
-          static inline void libusb_free_transfer(void *t){(void)t;}
+          static inline int libusb_init(libusb_context **c){(void)c;return 0;}
+          static inline int libusb_init_context(libusb_context **c, struct libusb_init_option *o, int cnt){(void)c;(void)o;(void)cnt;return 0;}
+          static inline void libusb_exit(libusb_context *c){(void)c;}
+          static inline int libusb_get_device_list(libusb_context *c, libusb_device ***l){(void)c;(void)l;return 0;}
+          static inline void libusb_free_device_list(libusb_device **l, int u){(void)l;(void)u;}
+          static inline int libusb_get_device_descriptor(libusb_device *d, struct libusb_device_descriptor *dd){(void)d;(void)dd;return 0;}
+          static inline int libusb_get_config_descriptor(libusb_device *d, int i, struct libusb_config_descriptor **cd){(void)d;(void)i;(void)cd;return 0;}
+          static inline void libusb_free_config_descriptor(struct libusb_config_descriptor *cd){(void)cd;}
+          static inline int libusb_open(libusb_device *d, libusb_device_handle **dh){(void)d;(void)dh;return 0;}
+          static inline void libusb_close(libusb_device_handle *dh){(void)dh;}
+          static inline int libusb_claim_interface(libusb_device_handle *dh, int i){(void)dh;(void)i;return 0;}
+          static inline int libusb_release_interface(libusb_device_handle *dh, int i){(void)dh;(void)i;return 0;}
+          static inline int libusb_bulk_transfer(libusb_device_handle *dh, unsigned char ep, unsigned char *d, int l, int *a, unsigned int t){(void)dh;(void)ep;(void)d;(void)l;(void)a;(void)t;return 0;}
+          static inline int libusb_control_transfer(libusb_device_handle *dh, unsigned char rt, unsigned char r, unsigned short wv, unsigned short wi, unsigned char *d, unsigned short l, unsigned int t){(void)dh;(void)rt;(void)r;(void)wv;(void)wi;(void)d;(void)l;(void)t;return 0;}
+          static inline int libusb_get_string_descriptor_ascii(libusb_device_handle *dh, unsigned char si, unsigned char *d, int l){(void)dh;(void)si;(void)d;(void)l;return 0;}
+          static inline int libusb_set_interface_alt_setting(libusb_device_handle *dh, int i, int a){(void)dh;(void)i;(void)a;return 0;}
+          static inline void libusb_free_transfer(struct libusb_transfer *t){(void)t;}
           static inline struct libusb_transfer* libusb_alloc_transfer(int i){(void)i;return 0;}
-          static inline int libusb_submit_transfer(void *t){(void)t;return 0;}
-          static inline int libusb_cancel_transfer(void *t){(void)t;return 0;}
+          static inline int libusb_submit_transfer(struct libusb_transfer *t){(void)t;return 0;}
+          static inline int libusb_cancel_transfer(struct libusb_transfer *t){(void)t;return 0;}
           static inline const char* libusb_error_name(int e){(void)e;return "stub";}
           static inline const char* libusb_strerror(int e){(void)e;return "stub";}
-          static inline int libusb_handle_events_timeout_completed(void *c, void *tv, int *completed){(void)c;(void)tv;(void)completed;return 0;}
+          static inline int libusb_handle_events_timeout_completed(libusb_context *c, struct timeval *tv, int *completed){(void)c;(void)tv;(void)completed;return 0;}
           static inline int libusb_has_capability(unsigned int c){(void)c;return 0;}
-          static inline int libusb_hotplug_register_callback(void *c, int ev, int fl, int vid, int pid, int cls, libusb_hotplug_callback_fn cb, void *ud, libusb_hotplug_callback_handle *h){(void)c;(void)ev;(void)fl;(void)vid;(void)pid;(void)cls;(void)cb;(void)ud;(void)h;return 0;}
-          static inline void libusb_hotplug_deregister_callback(void *c, libusb_hotplug_callback_handle h){(void)c;(void)h;}
-          static inline unsigned char libusb_get_port_number(void *d){(void)d;return 0;}
-          static inline unsigned char libusb_get_device_address(void *d){(void)d;return 0;}
-          static inline void libusb_ref_device(void *d){(void)d;}
-          static inline int libusb_set_auto_detach_kernel_driver(void *dh, int e){(void)dh;(void)e;return 0;}
+          static inline int libusb_hotplug_register_callback(libusb_context *c, int ev, int fl, int vid, int pid, int cls, libusb_hotplug_callback_fn cb, void *ud, libusb_hotplug_callback_handle *h){(void)c;(void)ev;(void)fl;(void)vid;(void)pid;(void)cls;(void)cb;(void)ud;(void)h;return 0;}
+          static inline void libusb_hotplug_deregister_callback(libusb_context *c, libusb_hotplug_callback_handle h){(void)c;(void)h;}
+          static inline unsigned char libusb_get_port_number(libusb_device *d){(void)d;return 0;}
+          static inline unsigned char libusb_get_device_address(libusb_device *d){(void)d;return 0;}
+          static inline void libusb_ref_device(libusb_device *d){(void)d;}
+          static inline int libusb_set_auto_detach_kernel_driver(libusb_device_handle *dh, int e){(void)dh;(void)e;return 0;}
           LIBUSB_EOF
           
           mkdir -p "$APS3E_CPP/ffmpeg_stubs/libusb-1.0"
