@@ -346,6 +346,13 @@ jobs:
             sed -i '' 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
           fi
           
+          # Patch SoundTouch: replace throw with std::terminate since rpcs3 disables exceptions
+          ST_TYPES="$APS3E_CPP/rpcs3/3rdparty/SoundTouch/soundtouch/include/STTypes.h"
+          if [ -f "$ST_TYPES" ]; then
+            sed -i '' 's/#define ST_THROW_RT_ERROR(x)[[:space:]]*{throw std::runtime_error(x);}/#define ST_THROW_RT_ERROR(x) {std::terminate();}/' "$ST_TYPES"
+            echo "Patched SoundTouch STTypes.h: replaced throw with std::terminate"
+          fi
+          
           # Patch Emu/CMakeLists.txt - remove NP sources (need protobuf, curl, wolfssl)
           EMU_CMAKE="$APS3E_CPP/rpcs3/rpcs3/Emu/CMakeLists.txt"
           if [ -f "$EMU_CMAKE" ]; then
