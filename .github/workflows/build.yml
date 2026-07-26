@@ -884,13 +884,20 @@ jobs:
           #include <stddef.h>
           typedef struct cubeb cubeb;
           typedef struct cubeb_stream cubeb_stream;
-          typedef enum { CUBEB_SAMPLE_FMT_S16LE=0, CUBEB_SAMPLE_FMT_S16BE=1, CUBEB_SAMPLE_FMT_F32LE=2, CUBEB_SAMPLE_FMT_F32BE=3, CUBEB_SAMPLE_FMT_S32LE=4, CUBEB_SAMPLE_FMT_S32BE=5 } cubeb_sample_format;
+          typedef void *cubeb_devid;
+          typedef enum { CUBEB_SAMPLE_FMT_S16LE=0, CUBEB_SAMPLE_FMT_S16BE=1, CUBEB_SAMPLE_FMT_F32LE=2, CUBEB_SAMPLE_FMT_F32BE=3, CUBEB_SAMPLE_FMT_S32LE=4, CUBEB_SAMPLE_FMT_S32BE=5,
+            CUBEB_SAMPLE_S16NE=0, CUBEB_SAMPLE_S16LE2=0, CUBEB_SAMPLE_FLOAT32NE=2, CUBEB_SAMPLE_FLOAT32LE=2 } cubeb_sample_format;
           typedef enum { CUBEB_OK=0, CUBEB_ERROR=1, CUBEB_ERROR_INVALID_PARAMETER=2, CUBEB_ERROR_INTERNAL=4 } cubeb_state;
           typedef enum { CUBEB_DEVICE_TYPE_UNKNOWN=0, CUBEB_DEVICE_TYPE_INPUT=1, CUBEB_DEVICE_TYPE_OUTPUT=2 } cubeb_device_type;
           typedef enum { CUBEB_DEVICE_STATE_PLUGGED=1, CUBEB_DEVICE_STATE_UNPLUGGED=2, CUBEB_DEVICE_STATE_NOT_PRESENT=4 } cubeb_device_state;
-          typedef struct { uint32_t rate; int channels; } cubeb_stream_params;
+          typedef enum { CUBEB_LAYOUT_NONE=0, CUBEB_LAYOUT_MONO=1, CUBEB_LAYOUT_STEREO=2, CUBEB_LAYOUT_STEREO_LFE=3,
+            CUBEB_LAYOUT_QUAD=4, CUBEB_LAYOUT_QUAD_LFE=5, CUBEB_LAYOUT_3F2_LFE=6, CUBEB_LAYOUT_3F4_LFE=7 } cubeb_layout;
+          typedef enum { CUBEB_STREAM_PREF_NONE=0, CUBEB_STREAM_PREF_DISABLE_DEVICE_SWITCHING=1 } cubeb_stream_pref;
+          typedef enum { CUBEB_LOG_NORMAL=0, CUBEB_LOG_VERBOSE=1 } cubeb_log_level;
+          typedef struct { cubeb_sample_format format; uint32_t rate; int channels; cubeb_layout layout; uint32_t prefs; } cubeb_stream_params;
           typedef void (*cubeb_data_callback)(cubeb_stream*, void*, const void*, long);
           typedef void (*cubeb_state_callback)(cubeb_stream*, void*, cubeb_state);
+          typedef void (*cubeb_device_collection_changed)(cubeb*, cubeb_device_type);
           typedef struct {
             const char *device_id;
             const char *friendly_name;
@@ -921,6 +928,8 @@ jobs:
           static inline uint32_t cubeb_get_preferred_sample_rate(cubeb *ctx){(void)ctx;return 48000;}
           static inline int cubeb_enumerate_devices(cubeb *ctx, cubeb_device_type type, cubeb_device_collection *collection){(void)ctx;(void)type;(void)collection;return 0;}
           static inline int cubeb_device_collection_destroy(cubeb *ctx, cubeb_device_collection *collection){(void)ctx;(void)collection;return 0;}
+          static inline int cubeb_register_device_collection_changed(cubeb *ctx, cubeb_device_type type, cubeb_device_collection_changed callback, void *user_ptr){(void)ctx;(void)type;(void)callback;(void)user_ptr;return 0;}
+          static inline int cubeb_get_min_latency(cubeb *ctx, cubeb_stream_params params, uint32_t *latency){(void)ctx;(void)params;(void)latency;*latency=0;return 0;}
           CUBEBEOF
           
           # Patch ConfigureCompiler.cmake
