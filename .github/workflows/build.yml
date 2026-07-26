@@ -849,8 +849,7 @@ jobs:
           CELL_SYSMOD="$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/Modules/cellSysmodule.cpp"
           if [ -f "$CELL_SYSMOD" ]; then
             sed -i '' 's/std::ranges::contains(/_compat::contains(/g' "$CELL_SYSMOD"
-            # Insert compat header after #include <ranges>
-            sed -i '' '/#include <ranges>/a\'$'\n''#include <algorithm>'$'\n''namespace _compat { template<typename R, typename T> static inline bool contains(R\&\& r, const T\& v) { for (auto\& x : r) if (x == v) return true; return false; } }' "$CELL_SYSMOD"
+            perl -i -0pe 's/(#include <ranges>)/$1\n#include <algorithm>\nnamespace _compat { template<typename R, typename T> static inline bool contains(R\&\& r, const T\& v) { for (auto\& x : r) if (x == v) return true; return false; } }/' "$CELL_SYSMOD"
           fi
           
           # Replace 3rdparty/CMakeLists.txt with iOS-compatible version
