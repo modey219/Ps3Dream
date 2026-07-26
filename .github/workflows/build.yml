@@ -845,6 +845,21 @@ jobs:
             sed -i '' 's/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=return-type//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g; s/-Werror=inconsistent-missing-override//g; s/-Werror=delete-non-virtual-dtor//g' "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake"
           fi
           
+          # Patch cellSysmodule.cpp: replace std::ranges::contains (C++23) with C++20 compat
+          CELL_SYSMOD="$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/Modules/cellSysmodule.cpp"
+          if [ -f "$CELL_SYSMOD" ]; then
+            python3 -c "
+import sys
+with open('$CELL_SYSMOD', 'r') as f:
+    content = f.read()
+# Add compat helper after #include <ranges>
+content = content.replace('#include <ranges>', '#include <ranges>\n#include <algorithm>\nnamespace _compat { template<typename R, typename T> static inline bool contains(R&& r, const T& v) { for (auto& x : r) if (x == v) return true; return false; } }')
+content = content.replace('std::ranges::contains(', '_compat::contains(')
+with open('$CELL_SYSMOD', 'w') as f:
+    f.write(content)
+"
+          fi
+          
           # Replace 3rdparty/CMakeLists.txt with iOS-compatible version
           THIRDPARTY="$APS3E_CPP/rpcs3/3rdparty/CMakeLists.txt"
           cp "$THIRDPARTY" "${THIRDPARTY}.bak"
@@ -853,7 +868,7 @@ jobs:
           find_package(PkgConfig)
           include(ExternalProject)
           include(CMakeDependentOption)
-          set(CMAKE_CXX_STANDARD 23)
+          set(CMAKE_CXX_STANDARD 20)
           if(NOT MSVC)
               add_compile_options("$<$<COMPILE_LANGUAGE:CXX,C>:-w>")
           endif()
@@ -952,7 +967,7 @@ jobs:
           cmake_minimum_required(VERSION 3.28)
           project(ps3dream LANGUAGES C CXX OBJCXX)
           
-          set(CMAKE_CXX_STANDARD 23)
+          set(CMAKE_CXX_STANDARD 20)
           set(CMAKE_POSITION_INDEPENDENT_CODE ON)
           set(CMAKE_OSX_DEPLOYMENT_TARGET 17.0)
           set(CMAKE_OSX_ARCHITECTURES "arm64")
