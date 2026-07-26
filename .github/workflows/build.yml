@@ -699,6 +699,8 @@ jobs:
           #define ALC_FALSE 0
           #define ALC_NO_ERROR 0
           #define ALC_CAPTURE_SAMPLES 0x312
+          #define ALC_CAPTURE_DEVICE_SPECIFIER 0x310
+          #define ALC_DEFAULT_DEVICE_SPECIFIER 0x1004
           static inline ALCdevice* alcOpenDevice(ALCstring d){(void)d;return 0;}
           static inline ALCboolean alcCloseDevice(ALCdevice *d){(void)d;return 1;}
           static inline ALCcontext* alcCreateContext(ALCdevice *d,const ALCint *a){(void)d;(void)a;return 0;}
@@ -712,6 +714,7 @@ jobs:
           static inline void alcCaptureStart(ALCdevice *d){(void)d;}
           static inline void alcCaptureStop(ALCdevice *d){(void)d;}
           static inline void alcCaptureSamples(ALCdevice *d,ALvoid *b,ALCsizei s){(void)d;(void)b;(void)s;}
+          static inline void alcGetIntegerv(ALCdevice *d,ALCenum p,ALCsizei s,ALCint *v){(void)d;(void)p;(void)s;(void)v;}
           ALCEOF
           
           echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/alext.h"
@@ -721,6 +724,11 @@ jobs:
           cp "$APS3E_CPP/ffmpeg_stubs/al.h" "$APS3E_CPP/ffmpeg_stubs/AL/al.h"
           cp "$APS3E_CPP/ffmpeg_stubs/alc.h" "$APS3E_CPP/ffmpeg_stubs/AL/alc.h"
           cp "$APS3E_CPP/ffmpeg_stubs/alext.h" "$APS3E_CPP/ffmpeg_stubs/AL/alext.h"
+          cat > "$APS3E_CPP/ffmpeg_stubs/AL/alext.h" << 'ALEXT2'
+          #pragma once
+          #include "al.h"
+          #include "alc.h"
+          ALEXT2
           
           # Create stub rtmidi
           cat > "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" << 'RTMIDI'
