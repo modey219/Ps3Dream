@@ -775,10 +775,23 @@ jobs:
               echo '// Stubbed for iOS' > "$stubfile"
             fi
           done
-          for stubhdr in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiKeyboard.h" \
-                         "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiGuitar.h"; do
-            if [ -f "$stubhdr" ]; then
-              printf '#pragma once\n// Stubbed for iOS\n' > "$stubhdr"
+          # Keep original RB3Midi headers (needed for type defs in sys_usbd)
+          # but copy our rtmidi_c.h stub so the transitive include resolves
+          
+          # Patch sys_usbd.cpp: comment out all RB3Midi references
+          SYS_USBD="$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/lv2/sys_usbd.cpp"
+          if [ -f "$SYS_USBD" ]; then
+            sed -i '' '/#include.*RB3Midi/d' "$SYS_USBD"
+            sed -i '' '/new usb_device_rb3_midi/d' "$SYS_USBD"
+            sed -i '' '/usb_device_rb3_midi_keyboard/d' "$SYS_USBD"
+            sed -i '' '/usb_device_rb3_midi_guitar/d' "$SYS_USBD"
+            sed -i '' '/usb_device_rb3_midi_drums/d' "$SYS_USBD"
+          fi
+          # Also overwrite the 3rdparty rtmidi_c.h with our stub
+          for rtpath in "$APS3E_CPP/rpcs3/3rdparty/rtmidi/rtmidi/rtmidi_c.h" \
+                         "$APS3E_CPP/rpcs3_build/3rdparty/rtmidi/rtmidi/rtmidi_c.h"; do
+            if [ -f "$rtpath" ]; then
+              cp "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" "$rtpath"
             fi
           done
           
