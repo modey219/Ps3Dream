@@ -121,12 +121,17 @@ jobs:
           #define SWS_BILINEAR 2
           #define SWS_BICUBIC 4
           #define SWS_POINT 8
+          #define AVFMT_GLOBALHEADER 0x0040
+          #define AVFMT_NOFILE 1
+          #define AV_CODEC_FLAG_GLOBAL_HEADER (1 << 22)
+          #define AVIO_FLAG_WRITE 2
+          #define AV_FRAME_MAKE_WRITABLE 1
           
           typedef enum { AV_LOG_QUIET=-8, AV_LOG_PANIC=0, AV_LOG_FATAL=8, AV_LOG_ERROR=16, AV_LOG_WARNING=24, AV_LOG_INFO=32, AV_LOG_VERBOSE=40, AV_LOG_DEBUG=48, AV_LOG_TRACE=56 } AVLogLevel;
           typedef enum { AV_CODEC_ID_NONE=0, AV_CODEC_ID_MPEG2VIDEO=2, AV_CODEC_ID_MPEG4=12, AV_CODEC_ID_H264=27, AV_CODEC_ID_HEVC=173, AV_CODEC_ID_VP8=139, AV_CODEC_ID_VP9=167, AV_CODEC_ID_AAC=86018, AV_CODEC_ID_MP3=86017, AV_CODEC_ID_AC3=86019 } AVCodecID;
-          typedef enum { AVMEDIA_TYPE_UNKNOWN=-1, AVMEDIA_TYPE_VIDEO=0, AVMEDIA_TYPE_AUDIO=1, AVMEDIA_TYPE_DATA=2, AVMEDIA_TYPE_SUBTITLE=3, AVMEDIA_TYPE_ATTACHMENT=4 } AVMediaType;
-          typedef enum { AV_PIX_FMT_NONE=-1, AV_PIX_FMT_YUV420P=0, AV_PIX_FMT_YUYV422=1, AV_PIX_FMT_RGB24=2, AV_PIX_FMT_BGR24=3, AV_PIX_FMT_RGBA=26, AV_PIX_FMT_BGRA=28, AV_PIX_FMT_NV12=23, AV_PIX_FMT_VIDEOTOOLBOX=100 } AVPixelFormat;
-          typedef enum { AV_SAMPLE_FMT_NONE=-1, AV_SAMPLE_FMT_U8=0, AV_SAMPLE_FMT_S16=1, AV_SAMPLE_FMT_S32=2, AV_SAMPLE_FMT_FLT=3, AV_SAMPLE_FMT_DBL=4, AV_SAMPLE_FMT_S16P=5, AV_SAMPLE_FMT_S32P=6, AV_SAMPLE_FMT_FLTP=7, AV_SAMPLE_FMT_DBLP=8 } AVSampleFormat;
+          enum AVMediaType { AVMEDIA_TYPE_UNKNOWN=-1, AVMEDIA_TYPE_VIDEO=0, AVMEDIA_TYPE_AUDIO=1, AVMEDIA_TYPE_DATA=2, AVMEDIA_TYPE_SUBTITLE=3, AVMEDIA_TYPE_ATTACHMENT=4 };
+          enum AVPixelFormat { AV_PIX_FMT_NONE=-1, AV_PIX_FMT_YUV420P=0, AV_PIX_FMT_YUYV422=1, AV_PIX_FMT_RGB24=2, AV_PIX_FMT_BGR24=3, AV_PIX_FMT_RGBA=26, AV_PIX_FMT_BGRA=28, AV_PIX_FMT_NV12=23, AV_PIX_FMT_VIDEOTOOLBOX=100 };
+          enum AVSampleFormat { AV_SAMPLE_FMT_NONE=-1, AV_SAMPLE_FMT_U8=0, AV_SAMPLE_FMT_S16=1, AV_SAMPLE_FMT_S32=2, AV_SAMPLE_FMT_FLT=3, AV_SAMPLE_FMT_DBL=4, AV_SAMPLE_FMT_S16P=5, AV_SAMPLE_FMT_S32P=6, AV_SAMPLE_FMT_FLTP=7, AV_SAMPLE_FMT_DBLP=8 };
           
           typedef struct AVRational { int num; int den; } AVRational;
           typedef struct AVDictionary AVDictionary;
@@ -192,6 +197,8 @@ jobs:
             int log_level_offset;
             int codec_type;
             const void *codec;
+            int codec_id;
+            uint32_t codec_tag;
             int bit_rate;
             int bits_per_coded_sample;
             int bits_per_raw_sample;
@@ -206,23 +213,28 @@ jobs:
             int width;
             int height;
             AVRational time_base;
+            AVRational framerate;
             int pix_fmt;
             int sample_fmt;
             AVChannelLayout ch_layout;
             void *extradata;
             int extradata_size;
+            int flags;
+            int thread_count;
+            int thread_type;
           } AVCodecContext;
           
           typedef struct AVCodec {
             const char *name;
             const char *long_name;
-            int id;
+            AVCodecID id;
             int type;
             int capabilities;
           } AVCodec;
           
           typedef struct AVStream {
             int index;
+            int id;
             AVCodecParameters *codecpar;
             AVRational time_base;
             int64_t duration;
@@ -240,6 +252,8 @@ jobs:
             int64_t bit_rate;
             AVDictionary *metadata;
             char *url;
+            int flags;
+            AVIOContext *pb;
           } AVFormatContext;
           
           typedef struct AVInputFormat { int dummy; } AVInputFormat;
@@ -248,9 +262,9 @@ jobs:
             const char *long_name;
             const char *mime_type;
             const char *extensions;
-            int audio_codec;
-            int video_codec;
-            int subtitle_codec;
+            AVCodecID audio_codec;
+            AVCodecID video_codec;
+            AVCodecID subtitle_codec;
             int flags;
           } AVOutputFormat;
           typedef struct AVIOContext { int dummy; } AVIOContext;
@@ -372,6 +386,22 @@ jobs:
           static inline AVStream *avformat_new_stream(AVFormatContext *a,const void *b){(void)a;(void)b;return 0;}
           static inline const AVOutputFormat *av_muxer_iterate(void **a){(void)a;return 0;}
           static inline int avformat_query_codec(const AVOutputFormat *a,AVCodecID b,int c){(void)a;(void)b;(void)c;return 0;}
+          static inline int avformat_alloc_output_context2(AVFormatContext **a,const AVOutputFormat *b,const char *c,const char *d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int avformat_write_header(AVFormatContext *a,void **b){(void)a;(void)b;return 0;}
+          static inline int av_write_trailer(AVFormatContext *a){(void)a;return 0;}
+          static inline int av_dump_format(AVFormatContext *a,int b,const char *c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int av_write_frame(AVFormatContext *a,AVPacket *b){(void)a;(void)b;return 0;}
+          static inline int av_interleaved_write_frame(AVFormatContext *a,AVPacket *b){(void)a;(void)b;return 0;}
+          static inline int avio_open(void **a,const char *b,int c){(void)a;(void)b;(void)c;return 0;}
+          static inline int avio_closep(void **a){(void)a;return 0;}
+          static inline int av_channel_layout_copy(AVChannelLayout *a,const AVChannelLayout *b){(void)a;(void)b;return 0;}
+          static inline const char *av_get_sample_fmt_name(int a){(void)a;return "unknown";}
+          static inline int av_frame_get_buffer(AVFrame *a,int b){(void)a;(void)b;return 0;}
+          static inline int av_frame_make_writable(AVFrame *a){(void)a;return 0;}
+          static inline int avcodec_send_frame(AVCodecContext *a,const AVFrame *b){(void)a;(void)b;return 0;}
+          static inline int avcodec_receive_packet(AVCodecContext *a,AVPacket *b){(void)a;(void)b;return 0;}
+          static inline void av_packet_rescale_ts(AVPacket *a,AVRational b,AVRational c){(void)a;(void)b;(void)c;}
+          static inline void *avcodec_get_hw_config(const AVCodec *a,int b){(void)a;(void)b;return 0;}
           
           static inline SwrContext *swr_alloc(void){return 0;}
           static inline int swr_init(SwrContext *a){(void)a;return 0;}
