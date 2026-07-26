@@ -209,6 +209,7 @@ jobs:
             int flags;
             int repeat_pict;
             int pict_type;
+            int interlaced_frame;
             int64_t pkt_duration;
           } AVFrame;
           
@@ -254,6 +255,7 @@ jobs:
             int skip_frame;
             int thread_count;
             int thread_type;
+            int ticks_per_frame;
           } AVCodecContext;
           
           typedef struct AVCodec {
@@ -401,6 +403,7 @@ jobs:
           static inline int avcodec_get_supported_config(const void *a,const AVCodec *b,AVCodecConfig c,int d,const void **e,int *f){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;return 0;}
           static inline void avcodec_free_context(AVCodecContext **a){(void)a;}
           static inline void avcodec_flush_buffers(AVCodecContext *a){(void)a;}
+          static inline void avcodec_register_all(void){}
           static inline const AVCodecDescriptor *avcodec_descriptor_get(int a){(void)a;return 0;}
           static inline int avcodec_parameters_to_context(AVCodecContext *a,const AVCodecParameters *b){(void)a;(void)b;return 0;}
           static inline int avcodec_parameters_from_context(AVCodecParameters *a,const AVCodecContext *b){(void)a;(void)b;return 0;}
