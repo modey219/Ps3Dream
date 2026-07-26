@@ -765,13 +765,20 @@ jobs:
           RTMIDI
           cp "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" "$APS3E_CPP/ffmpeg_stubs/rtmidi.h"
           
-          # Stub USB and MIDI source files (not needed on iOS)
-          for stubfile in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp" \
+          # Stub/delete files that can't compile on iOS (rtmidi submodule not available, etc.)
+          for stubfile in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiKeyboard.cpp" \
+                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiGuitar.cpp" \
+                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp" \
                           "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_microphone.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiKeyboard.cpp"; do
+                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp"; do
             if [ -f "$stubfile" ]; then
               echo '// Stubbed for iOS' > "$stubfile"
+            fi
+          done
+          for stubhdr in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiKeyboard.h" \
+                         "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiGuitar.h"; do
+            if [ -f "$stubhdr" ]; then
+              printf '#pragma once\n// Stubbed for iOS\n' > "$stubhdr"
             fi
           done
           
