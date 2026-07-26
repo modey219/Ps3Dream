@@ -848,17 +848,9 @@ jobs:
           # Patch cellSysmodule.cpp: replace std::ranges::contains (C++23) with C++20 compat
           CELL_SYSMOD="$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/Modules/cellSysmodule.cpp"
           if [ -f "$CELL_SYSMOD" ]; then
-            cat > /tmp/patch_ranges.py << 'PYEOF'
-import sys
-with open(sys.argv[1], 'r') as f:
-    content = f.read()
-compat = '#include <algorithm>\nnamespace _compat { template<typename R, typename T> static inline bool contains(R&& r, const T& v) { for (auto& x : r) if (x == v) return true; return false; } }\n'
-content = content.replace('#include <ranges>', '#include <ranges>\n' + compat)
-content = content.replace('std::ranges::contains(', '_compat::contains(')
-with open(sys.argv[1], 'w') as f:
-    f.write(content)
-PYEOF
-            python3 /tmp/patch_ranges.py "$CELL_SYSMOD"
+            sed -i '' 's/std::ranges::contains(/_compat::contains(/g' "$CELL_SYSMOD"
+            # Insert compat header after #include <ranges>
+            sed -i '' '/#include <ranges>/a\'$'\n''#include <algorithm>'$'\n''namespace _compat { template<typename R, typename T> static inline bool contains(R\&\& r, const T\& v) { for (auto\& x : r) if (x == v) return true; return false; } }' "$CELL_SYSMOD"
           fi
           
           # Replace 3rdparty/CMakeLists.txt with iOS-compatible version
