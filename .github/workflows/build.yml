@@ -758,6 +758,30 @@ jobs:
           echo 'static inline void freeUPNPUrls(UPNPUrls *a){(void)a;}' >> "$MINIFILE"
           cp "$MINIFILE" "$APS3E_CPP/ffmpeg_stubs/miniupnperrors.h"
           
+          # Create cubeb stub headers
+          mkdir -p "$APS3E_CPP/ffmpeg_stubs/cubeb"
+          cat > "$APS3E_CPP/ffmpeg_stubs/cubeb/cubeb.h" << 'CUBEBEOF'
+          #pragma once
+          #include <stdint.h>
+          #include <stddef.h>
+          typedef struct cubeb cubeb;
+          typedef struct cubeb_stream cubeb_stream;
+          typedef enum { CUBEB_SAMPLE_FMT_S16LE=0, CUBEB_SAMPLE_FMT_S16BE=1, CUBEB_SAMPLE_FMT_F32LE=2, CUBEB_SAMPLE_FMT_F32BE=3, CUBEB_SAMPLE_FMT_S32LE=4, CUBEB_SAMPLE_FMT_S32BE=5 } cubeb_sample_format;
+          typedef enum { CUBEB_OK=0, CUBEB_ERROR=1 } cubeb_state;
+          typedef struct { uint32_t rate; int channels; } cubeb_stream_params;
+          typedef void (*cubeb_data_callback)(cubeb_stream*, void*, const void*, long);
+          typedef void (*cubeb_state_callback)(cubeb_stream*, void*, cubeb_state);
+          static inline int cubeb_init(cubeb **ctx, const char *name, const char *backend){(void)ctx;(void)name;(void)backend;return 0;}
+          static inline void cubeb_destroy(cubeb *ctx){(void)ctx;}
+          static inline const char *cubeb_get_backend_id(cubeb *ctx){(void)ctx;return "stub";}
+          static inline int cubeb_stream_init(cubeb *ctx, cubeb_stream **stream, const char *name, cubeb_stream_params params, cubeb_stream_params input_params, cubeb_data_callback data_callback, cubeb_state_callback state_callback, void *user_ptr){(void)ctx;(void)stream;(void)name;(void)params;(void)input_params;(void)data_callback;(void)state_callback;(void)user_ptr;return 0;}
+          static inline void cubeb_stream_destroy(cubeb_stream *stream){(void)stream;}
+          static inline int cubeb_stream_start(cubeb_stream *stream){(void)stream;return 0;}
+          static inline int cubeb_stream_stop(cubeb_stream *stream){(void)stream;return 0;}
+          static inline int cubeb_stream_get_latency(cubeb_stream *stream, uint32_t *latency){(void)stream;(void)latency;return 0;}
+          static inline uint32_t cubeb_get_preferred_sample_rate(cubeb *ctx){(void)ctx;return 48000;}
+          CUBEBEOF
+          
           # Patch ConfigureCompiler.cmake
           if [ -f "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" ]; then
             sed -i '' 's/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=return-type//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g; s/-Werror=inconsistent-missing-override//g; s/-Werror=delete-non-virtual-dtor//g' "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake"
@@ -817,6 +841,7 @@ jobs:
           add_library(3rdparty_libcurl INTERFACE)
           add_library(3rdparty_discordRPC INTERFACE)
           add_library(cubeb INTERFACE)
+          target_include_directories(cubeb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../../ffmpeg_stubs)
           add_library(rtmidi INTERFACE)
           add_library(3rdparty_llvm INTERFACE)
           add_library(3rdparty_sdl3 INTERFACE)
