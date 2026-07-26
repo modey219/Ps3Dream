@@ -132,6 +132,10 @@ jobs:
           typedef struct AVDictionary AVDictionary;
           typedef struct AVDictionaryEntry { char *key; char *value; } AVDictionaryEntry;
           typedef struct AVChannelLayout { uint64_t order; uint64_t nb_channels; union { uint64_t mask; int index; } u; } AVChannelLayout;
+          typedef struct AVInputFormat AVInputFormat;
+          typedef struct AVOutputFormat AVOutputFormat;
+          typedef struct AVStream AVStream;
+          typedef struct AVFormatContext AVFormatContext;
           
           #define AV_CHANNEL_LAYOUT_STEREO ((AVChannelLayout){0,2,{{3}}})
           #define AV_CHANNEL_LAYOUT_5POINT1 ((AVChannelLayout){0,6,{{63}}})
