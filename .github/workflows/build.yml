@@ -447,7 +447,6 @@ jobs:
           static inline void av_packet_rescale_ts(AVPacket *a,AVRational b,AVRational c){(void)a;(void)b;(void)c;}
           static inline void *avcodec_get_hw_config(const AVCodec *a,int b){(void)a;(void)b;return 0;}
           static inline AVBufferRef *av_buffer_create(uint8_t *a,size_t b,void (*c)(void*,uint8_t*),void *d,int e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
-          static inline void av_buffer_unref(AVBufferRef **a){(void)a;}
           
           static inline SwrContext *swr_alloc(void){return 0;}
           static inline int swr_init(SwrContext *a){(void)a;return 0;}
