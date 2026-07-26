@@ -216,7 +216,7 @@ jobs:
             AVRational time_base;
             AVRational framerate;
             int pix_fmt;
-            int sample_fmt;
+            AVSampleFormat sample_fmt;
             AVChannelLayout ch_layout;
             void *extradata;
             int extradata_size;
@@ -332,7 +332,7 @@ jobs:
           static inline int av_opt_set_sample_fmt(void *a,const char *b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
           static inline int av_opt_set_channel_layout(void *a,const char *b,long long c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
           
-          static inline int av_image_fill_linesizes(int a[],int b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int av_image_fill_linesizes(int a[],int b,int c){(void)a;(void)b;(void)c;return 0;}
           static inline int av_image_fill_pointers(uint8_t *a[],int b,int c,uint8_t *d,const int e[]){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
           static inline int av_image_get_buffer_size(int a,int b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
           static inline int av_image_copy_to_buffer(uint8_t *a,int b,const uint8_t *c[],const int d[],int e,int f,int g){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;return 0;}
@@ -393,8 +393,8 @@ jobs:
           static inline int av_dump_format(AVFormatContext *a,int b,const char *c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
           static inline int av_write_frame(AVFormatContext *a,AVPacket *b){(void)a;(void)b;return 0;}
           static inline int av_interleaved_write_frame(AVFormatContext *a,AVPacket *b){(void)a;(void)b;return 0;}
-          static inline int avio_open(void **a,const char *b,int c){(void)a;(void)b;(void)c;return 0;}
-          static inline int avio_closep(void **a){(void)a;return 0;}
+          static inline int avio_open(AVIOContext **a,const char *b,int c){(void)a;(void)b;(void)c;return 0;}
+          static inline int avio_closep(AVIOContext **a){(void)a;return 0;}
           static inline int av_channel_layout_copy(AVChannelLayout *a,const AVChannelLayout *b){(void)a;(void)b;return 0;}
           static inline const char *av_get_sample_fmt_name(int a){(void)a;return "unknown";}
           static inline int av_frame_get_buffer(AVFrame *a,int b){(void)a;(void)b;return 0;}
@@ -408,7 +408,7 @@ jobs:
           static inline int swr_init(SwrContext *a){(void)a;return 0;}
           static inline void swr_free(SwrContext **a){(void)a;}
           static inline int swr_convert(SwrContext *a,uint8_t **b,int c,const uint8_t **d,int e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
-          static inline int swr_alloc_set_opts2(SwrContext **a,AVChannelLayout b,AVSampleFormat c,int d,AVChannelLayout e,AVSampleFormat f,int g,int h){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;return 0;}
+          static inline int swr_alloc_set_opts2(SwrContext **a,const AVChannelLayout *b,AVSampleFormat c,int d,const AVChannelLayout *e,AVSampleFormat f,int g,int h,...){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;return 0;}
           static inline int swr_is_initialized(SwrContext *a){(void)a;return 0;}
           
           static inline SwsContext *sws_getContext(int a,int b,int c,int d,int e,int f,int g,void *h,void *i,void *j){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;return 0;}
