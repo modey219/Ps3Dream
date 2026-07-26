@@ -742,11 +742,25 @@ jobs:
           # Create stub rtmidi
           cat > "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" << 'RTMIDI'
           #pragma once
-          struct _RtMidiWrapper;
+          typedef int RtMidiApi;
+          typedef void (*RtMidiCallback)(double, const unsigned char*, size_t, void*);
+          struct _RtMidiWrapper {
+            void *ptr;
+            void *data;
+            const char *msg;
+            int ok;
+          };
           typedef struct _RtMidiWrapper* RtMidiInPtr;
           typedef struct _RtMidiWrapper* RtMidiOutPtr;
           static inline RtMidiInPtr rtmidi_in_create_default(void){return 0;}
-          static inline void rtmidi_close_in(void *p){(void)p;}
+          static inline RtMidiInPtr rtmidi_in_create(RtMidiApi a, const char *n){(void)a;(void)n;return 0;}
+          static inline void rtmidi_in_free(RtMidiInPtr p){(void)p;}
+          static inline void rtmidi_close_in(RtMidiInPtr p){(void)p;}
+          static inline unsigned int rtmidi_get_port_count(void *p){(void)p;return 0;}
+          static inline const char* rtmidi_get_port_name(void *p, unsigned int i){(void)p;(void)i;return "";}
+          static inline void rtmidi_open_port(void *p, unsigned int i, const char *n){(void)p;(void)i;(void)n;}
+          static inline RtMidiApi rtmidi_in_get_current_api(void *p){(void)p;return 0;}
+          static inline double rtmidi_in_get_message(void *p, const unsigned char **m, size_t *s){(void)p;(void)m;(void)s;return 0;}
           RTMIDI
           cp "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" "$APS3E_CPP/ffmpeg_stubs/rtmidi.h"
           
