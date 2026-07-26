@@ -145,9 +145,12 @@ jobs:
           #define AV_PICTURE_TYPE_I 1
           #define AV_PICTURE_TYPE_P 2
           #define AV_PICTURE_TYPE_B 3
+          #define FF_THREAD_SLICE 1
+          #define FF_THREAD_FRAME 2
+          #define AV_FRAME_BUF_SIZE 64
           
           typedef enum { AV_LOG_QUIET=-8, AV_LOG_PANIC=0, AV_LOG_FATAL=8, AV_LOG_ERROR=16, AV_LOG_WARNING=24, AV_LOG_INFO=32, AV_LOG_VERBOSE=40, AV_LOG_DEBUG=48, AV_LOG_TRACE=56 } AVLogLevel;
-          typedef enum { AV_CODEC_ID_NONE=0, AV_CODEC_ID_MPEG2VIDEO=2, AV_CODEC_ID_MPEG4=12, AV_CODEC_ID_H264=27, AV_CODEC_ID_HEVC=173, AV_CODEC_ID_VP8=139, AV_CODEC_ID_VP9=167, AV_CODEC_ID_AAC=86018, AV_CODEC_ID_MP3=86017, AV_CODEC_ID_AC3=86019 } AVCodecID;
+          typedef enum { AV_CODEC_ID_NONE=0, AV_CODEC_ID_MPEG2VIDEO=2, AV_CODEC_ID_MPEG4=12, AV_CODEC_ID_H264=27, AV_CODEC_ID_HEVC=173, AV_CODEC_ID_VP8=139, AV_CODEC_ID_VP9=167, AV_CODEC_ID_AAC=86018, AV_CODEC_ID_MP3=86017, AV_CODEC_ID_AC3=86019, AV_CODEC_ID_ATRAC3=86029, AV_CODEC_ID_ATRAC3P=86079 } AVCodecID;
           enum AVMediaType { AVMEDIA_TYPE_UNKNOWN=-1, AVMEDIA_TYPE_VIDEO=0, AVMEDIA_TYPE_AUDIO=1, AVMEDIA_TYPE_DATA=2, AVMEDIA_TYPE_SUBTITLE=3, AVMEDIA_TYPE_ATTACHMENT=4 };
           enum AVPixelFormat { AV_PIX_FMT_NONE=-1, AV_PIX_FMT_YUV420P=0, AV_PIX_FMT_YUYV422=1, AV_PIX_FMT_RGB24=2, AV_PIX_FMT_BGR24=3, AV_PIX_FMT_RGBA=26, AV_PIX_FMT_BGRA=28, AV_PIX_FMT_NV12=23, AV_PIX_FMT_VIDEOTOOLBOX=100, AV_PIX_FMT_YUVA420P=32, AV_PIX_FMT_ARGB=25, AV_PIX_FMT_UYVY422=17, AV_PIX_FMT_YUVJ420P=12 };
           enum AVSampleFormat { AV_SAMPLE_FMT_NONE=-1, AV_SAMPLE_FMT_U8=0, AV_SAMPLE_FMT_S16=1, AV_SAMPLE_FMT_S32=2, AV_SAMPLE_FMT_FLT=3, AV_SAMPLE_FMT_DBL=4, AV_SAMPLE_FMT_S16P=5, AV_SAMPLE_FMT_S32P=6, AV_SAMPLE_FMT_FLTP=7, AV_SAMPLE_FMT_DBLP=8 };
@@ -211,6 +214,7 @@ jobs:
             int pict_type;
             int interlaced_frame;
             int64_t pkt_duration;
+            struct AVBufferRef *buf[8];
           } AVFrame;
           
           typedef struct AVPacket {
@@ -222,6 +226,7 @@ jobs:
             int flags;
             int64_t duration;
             int64_t pos;
+            struct AVBufferRef *buf;
           } AVPacket;
           
           typedef struct AVCodecContext {
@@ -256,6 +261,9 @@ jobs:
             int thread_count;
             int thread_type;
             int ticks_per_frame;
+            int block_align;
+            void *opaque;
+            int (*get_buffer2)(struct AVCodecContext *s, struct AVFrame *frame, int flags);
           } AVCodecContext;
           
           typedef struct AVCodec {
@@ -438,6 +446,8 @@ jobs:
           static inline int avcodec_receive_packet(AVCodecContext *a,AVPacket *b){(void)a;(void)b;return 0;}
           static inline void av_packet_rescale_ts(AVPacket *a,AVRational b,AVRational c){(void)a;(void)b;(void)c;}
           static inline void *avcodec_get_hw_config(const AVCodec *a,int b){(void)a;(void)b;return 0;}
+          static inline AVBufferRef *av_buffer_create(uint8_t *a,size_t b,void (*c)(void*,uint8_t*),void *d,int e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
+          static inline void av_buffer_unref(AVBufferRef **a){(void)a;}
           
           static inline SwrContext *swr_alloc(void){return 0;}
           static inline int swr_init(SwrContext *a){(void)a;return 0;}
