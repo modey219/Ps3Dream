@@ -768,6 +768,7 @@ jobs:
           # Stub/delete files that can't compile on iOS (rtmidi submodule not available, etc.)
           for stubfile in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiKeyboard.cpp" \
                           "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiGuitar.cpp" \
+                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiDrums.cpp" \
                           "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp" \
                           "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_microphone.cpp" \
                           "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp"; do
