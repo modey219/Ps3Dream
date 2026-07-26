@@ -106,7 +106,6 @@ jobs:
           #include <stdint.h>
           #include <stddef.h>
           typedef struct AVCodecContext AVCodecContext;
-          typedef struct AVCodec AVCodec;
           typedef struct AVPacket AVPacket;
           typedef struct AVFrame AVFrame;
           typedef struct AVCodecParameters AVCodecParameters;
@@ -114,16 +113,32 @@ jobs:
           typedef struct AVCodecParserContext AVCodecParserContext;
           typedef struct AVCodecParser AVCodecParser;
           typedef struct AVDictionary AVDictionary;
-          enum { AV_CODEC_ID_NONE=0, AV_CODEC_ID_H264=27, AV_CODEC_ID_HEVC=173, AV_CODEC_ID_VP8=139, AV_CODEC_ID_VP9=167, AV_CODEC_ID_VP9_DIRAC=21 };
+          typedef enum AVCodecID { AV_CODEC_ID_NONE=0, AV_CODEC_ID_H264=27, AV_CODEC_ID_HEVC=173, AV_CODEC_ID_VP8=139, AV_CODEC_ID_VP9=167 } AVCodecID;
+          typedef enum AVMediaType { AVMEDIA_TYPE_UNKNOWN=-1, AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_DATA, AVMEDIA_TYPE_SUBTITLE, AVMEDIA_TYPE_ATTACHMENT } AVMediaType;
           enum { AV_INPUT_BUFFER_PADDING_SIZE=32 };
           enum { AV_PKT_FLAG_KEY=1 };
           enum { FF_COMPLIANCE_NORMAL=0 };
+          typedef struct AVCodec {
+            const char *name;
+            const char *long_name;
+            int id;
+            int type;
+            int capabilities;
+            const struct AVCodecHWConfigInternal *const *hw_configs;
+            const char *pix_fmts;
+            const int *sample_fmts;
+            const int *supported_samplerates;
+            const int *channel_layouts;
+          } AVCodec;
           static inline AVCodecContext *avcodec_alloc_context3(const AVCodec *c){(void)c;return 0;}
           static inline int avcodec_open2(AVCodecContext *a,const AVCodec *b,AVDictionary **c){(void)a;(void)b;(void)c;return 0;}
-          static inline int avcodec_send_packet(AVCodecContext *a,const AVPacket *b){(void)a;(void)b;return 0;}
+          static inline int avcodec_send_packet(AVCodecContext *a,const AVCodec *b){(void)a;(void)b;return 0;}
           static inline int avcodec_receive_frame(AVCodecContext *a,AVFrame *b){(void)a;(void)b;return 0;}
           static inline const AVCodec *avcodec_find_decoder(int id){(void)id;return 0;}
           static inline const AVCodec *avcodec_find_encoder(int id){(void)id;return 0;}
+          static inline const AVCodec *av_codec_iterate(void **a){(void)a;return 0;}
+          static inline int av_codec_is_decoder(const AVCodec *a){(void)a;return 0;}
+          static inline int av_codec_is_encoder(const AVCodec *a){(void)a;return 0;}
           static inline void avcodec_free_context(AVCodecContext **a){(void)a;}
           static inline void avcodec_flush_buffers(AVCodecContext *a){(void)a;}
           static inline int avcodec_parameters_to_context(AVCodecContext *a,const AVCodecParameters *b){(void)a;(void)b;return 0;}
@@ -183,10 +198,15 @@ jobs:
           FFMEM
           
           cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/log.h" << 'FFLOG'
+          #include <stdarg.h>
+          #include <stddef.h>
           enum { AV_LOG_QUIET=-8, AV_LOG_PANIC=0, AV_LOG_FATAL=8, AV_LOG_ERROR=16, AV_LOG_WARNING=24, AV_LOG_INFO=32, AV_LOG_VERBOSE=40, AV_LOG_DEBUG=48, AV_LOG_TRACE=56 };
           #define AV_LOG_SKIP_REPEATED 1
+          #define AV_LOG_PRINT_LEVEL 16
           static inline void av_log_set_level(int a){(void)a;}
           static inline int av_log_get_level(void){return 0;}
+          static inline void av_log(void *a,int b,const char *fmt,...){(void)a;(void)b;(void)fmt;}
+          static inline int av_log_format_line2(void *a,int b,const char *fmt,va_list a2,char *c,int d){(void)a;(void)b;(void)fmt;(void)a2;(void)c;(void)d;return 0;}
           FFLOG
           
           cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/opt.h" << 'FFOPT'
@@ -238,8 +258,16 @@ jobs:
           
           cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/error.h" << 'FFERR'
           #include <stdint.h>
-          #define FFERRTAG(a,b,c,d) ((int)((a)|(b)<<8|(c)<<16|(d)<<24))
+          #include <stddef.h>
+          #define FFERRTAG(a,b,c,d) ((int)((unsigned char)(a)|(unsigned char)(b)<<8|(unsigned char)(c)<<16|(unsigned char)(d)<<24))
+          #define AVERROR_EOF          FFERRTAG('E','O','F',' ')
+          #define AVERROR_INVALIDDATA  FFERRTAG('I','N','D','I')
+          #define AVERROR_EXIT         FFERRTAG('E','X','I','T')
+          #define AVERROR( x )        (-(x))
+          #define AVUNERROR( x )      (-(x))
+          #define AV_ERROR_MAX_STRING_SIZE 128
           static inline char *av_make_error_string(char *a,size_t b,int c){(void)b;(void)c;a[0]=0;return a;}
+          static inline int av_strerror(int errnum,char *errbuf,size_t errbuf_size){(void)errnum;(void)errbuf;(void)errbuf_size;return 0;}
           FFERR
           
           cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/mathematics.h" << 'FFMATH'
@@ -754,6 +782,7 @@ jobs:
           add_library(usb-1.0-shared INTERFACE)
           add_library(adrenotools INTERFACE)
           add_library(3rdparty_ffmpeg INTERFACE)
+          target_include_directories(3rdparty_ffmpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../../ffmpeg_stubs)
           add_library(3rdparty_glew INTERFACE)
           add_library(3rdparty_opengl INTERFACE)
           add_library(3rdparty_openal INTERFACE)
@@ -965,6 +994,9 @@ jobs:
           rm -rf build_ios
           mkdir build_ios && cd build_ios
           
+          # Compute absolute path for ffmpeg stubs
+          FFMPEG_STUBS_DIR="$(cd .. && pwd)/ffmpeg_stubs"
+          
           cmake .. \
             -DCMAKE_SYSTEM_NAME=iOS \
             -DIOS=TRUE \
@@ -972,8 +1004,8 @@ jobs:
             -DANDROID_PLATFORM_LEVEL=30 \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 \
             -DCMAKE_OSX_ARCHITECTURES="arm64" \
-            "-DCMAKE_C_FLAGS=-D__API_UNAVAILABLE(...)= " \
-            "-DCMAKE_CXX_FLAGS=-D__API_UNAVAILABLE(...)= " \
+            "-DCMAKE_C_FLAGS=-D__API_UNAVAILABLE(...)= -I${FFMPEG_STUBS_DIR}" \
+            "-DCMAKE_CXX_FLAGS=-D__API_UNAVAILABLE(...)= -I${FFMPEG_STUBS_DIR}" \
             -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
