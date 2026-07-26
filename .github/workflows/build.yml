@@ -141,6 +141,7 @@ jobs:
           typedef struct AVOutputFormat AVOutputFormat;
           typedef struct AVStream AVStream;
           typedef struct AVFormatContext AVFormatContext;
+          typedef struct AVIOContext AVIOContext;
           
           #define AV_CHANNEL_LAYOUT_STEREO ((AVChannelLayout){0,2,{{3}}})
           #define AV_CHANNEL_LAYOUT_5POINT1 ((AVChannelLayout){0,6,{{63}}})
