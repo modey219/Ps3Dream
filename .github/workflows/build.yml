@@ -853,7 +853,7 @@ jobs:
           find_package(PkgConfig)
           include(ExternalProject)
           include(CMakeDependentOption)
-          set(CMAKE_CXX_STANDARD 20)
+          set(CMAKE_CXX_STANDARD 23)
           if(NOT MSVC)
               add_compile_options("$<$<COMPILE_LANGUAGE:CXX,C>:-w>")
           endif()
@@ -952,7 +952,7 @@ jobs:
           cmake_minimum_required(VERSION 3.28)
           project(ps3dream LANGUAGES C CXX OBJCXX)
           
-          set(CMAKE_CXX_STANDARD 20)
+          set(CMAKE_CXX_STANDARD 23)
           set(CMAKE_POSITION_INDEPENDENT_CODE ON)
           set(CMAKE_OSX_DEPLOYMENT_TARGET 17.0)
           set(CMAKE_OSX_ARCHITECTURES "arm64")
