@@ -80,55 +80,311 @@ jobs:
                    "$APS3E_CPP/ffmpeg_stubs/libswscale" \
                    "$APS3E_CPP/ffmpeg_stubs/libswresample"
           
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h"
-          echo 'enum AVPixelFormat { AV_PIX_FMT_NONE=-1, AV_PIX_FMT_YUV420P=0, AV_PIX_FMT_YUYV422=1, AV_PIX_FMT_RGB24=2, AV_PIX_FMT_BGR24=3, AV_PIX_FMT_RGBA=26, AV_PIX_FMT_BGRA=28 };' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h"
+          # Comprehensive ffmpeg stub headers - create every commonly used header
+          # so we don't play whack-a-mole with missing headers
+          for hdr in libavcodec/avcodec.h libavcodec/packet.h libavcodec/version.h \
+                     libavformat/avformat.h libavformat/avio.h libavformat/version.h \
+                     libavutil/avassert.h libavutil/avstring.h libavutil/bprint.h \
+                     libavutil/buffer.h libavutil/channel_layout.h libavutil/common.h \
+                     libavutil/cpu.h libavutil/crc.h libavutil/dict.h libavutil/error.h \
+                     libavutil/eval.h libavutil/frame.h libavutil/hwcontext.h \
+                     libavutil/imgutils.h libavutil/intreadwrite.h libavutil/log.h \
+                     libavutil/mathematics.h libavutil/md5.h libavutil/mem.h \
+                     libavutil/opt.h libavutil/parse.h libavutil/pixdesc.h \
+                     libavutil/pixfmt.h libavutil/rational.h libavutil/samplefmt.h \
+                     libavutil/timestamp.h libavutil/version.h \
+                     libavutil/mastering_display_metadata.h libavutil/hdr_dynamic_metadata.h \
+                     libavutil/film_grain_params.h libavutil/audio_fifo.h \
+                     libswscale/swscale.h libswscale/version.h \
+                     libswresample/swresample.h libswresample/version.h; do
+            mkdir -p "$(dirname "$APS3E_CPP/ffmpeg_stubs/$hdr")"
+            echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/$hdr"
+          done
           
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo '#include <stdint.h>' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'typedef void SwsContext;' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'enum { SWS_FAST_BILINEAR=1, SWS_BILINEAR=2, SWS_BICUBIC=4, SWS_POINT=8 };' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'static inline SwsContext* sws_getContext(int a,int b,int c,int d,int e,int f,int g,void *h,void *i,void *j){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'static inline SwsContext* sws_getCachedContext(SwsContext *c,int a,int b,int d,int e,int f,int g,int h,void *i,void *j,void *k){(void)c;(void)a;(void)b;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;(void)k;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'static inline int sws_scale(SwsContext *c,const uint8_t *const a[],const int b[],int d,int e,uint8_t *const f[],const int g[]){(void)c;(void)a;(void)b;(void)d;(void)e;(void)f;(void)g;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
-          echo 'static inline void sws_freeContext(SwsContext *c){(void)c;}' >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h"
+          # Fill in key types/functions that rpcs3 actually uses
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h" << 'FFTYPES'
+          #include <stdint.h>
+          #include <stddef.h>
+          typedef struct AVCodecContext AVCodecContext;
+          typedef struct AVCodec AVCodec;
+          typedef struct AVPacket AVPacket;
+          typedef struct AVFrame AVFrame;
+          typedef struct AVCodecParameters AVCodecParameters;
+          typedef struct AVBitStreamFilterContext AVBitStreamFilterContext;
+          typedef struct AVCodecParserContext AVCodecParserContext;
+          typedef struct AVCodecParser AVCodecParser;
+          typedef struct AVDictionary AVDictionary;
+          enum { AV_CODEC_ID_NONE=0, AV_CODEC_ID_H264=27, AV_CODEC_ID_HEVC=173, AV_CODEC_ID_VP8=139, AV_CODEC_ID_VP9=167, AV_CODEC_ID_VP9_DIRAC=21 };
+          enum { AV_INPUT_BUFFER_PADDING_SIZE=32 };
+          enum { AV_PKT_FLAG_KEY=1 };
+          enum { FF_COMPLIANCE_NORMAL=0 };
+          static inline AVCodecContext *avcodec_alloc_context3(const AVCodec *c){(void)c;return 0;}
+          static inline int avcodec_open2(AVCodecContext *a,const AVCodec *b,AVDictionary **c){(void)a;(void)b;(void)c;return 0;}
+          static inline int avcodec_send_packet(AVCodecContext *a,const AVPacket *b){(void)a;(void)b;return 0;}
+          static inline int avcodec_receive_frame(AVCodecContext *a,AVFrame *b){(void)a;(void)b;return 0;}
+          static inline const AVCodec *avcodec_find_decoder(int id){(void)id;return 0;}
+          static inline const AVCodec *avcodec_find_encoder(int id){(void)id;return 0;}
+          static inline void avcodec_free_context(AVCodecContext **a){(void)a;}
+          static inline void avcodec_flush_buffers(AVCodecContext *a){(void)a;}
+          static inline int avcodec_parameters_to_context(AVCodecContext *a,const AVCodecParameters *b){(void)a;(void)b;return 0;}
+          static inline int avcodec_parameters_from_context(AVCodecParameters *a,const AVCodecContext *b){(void)a;(void)b;return 0;}
+          static inline int avcodec_decode_video2(AVCodecContext *a,AVFrame *b,int *c,const AVPacket *d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int avcodec_decode_audio4(AVCodecContext *a,AVFrame *b,int *c,const AVPacket *d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int avcodec_encode_video2(AVCodecContext *a,AVPacket *b,const AVFrame *c,int *d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int avcodec_encode_audio2(AVCodecContext *a,AVPacket *b,const AVFrame *c,int *d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline AVPacket *av_packet_alloc(void){return 0;}
+          static inline void av_packet_free(AVPacket **a){(void)a;}
+          static inline void av_init_packet(AVPacket *a){(void)a;}
+          static inline int av_packet_ref(AVPacket *a){(void)a;return 0;}
+          static inline void av_packet_unref(AVPacket *a){(void)a;}
+          static inline AVFrame *av_frame_alloc(void){return 0;}
+          static inline void av_frame_free(AVFrame **a){(void)a;}
+          static inline void av_frame_unref(AVFrame *a){(void)a;}
+          FFTYPES
           
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
-          echo '#include <stdint.h>' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
-          echo 'static inline int av_image_fill_linesizes(int a[],int b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
-          echo 'static inline int av_image_fill_pointers(uint8_t *a[],int b,int c,uint8_t *d,const int e[]){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h"
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/packet.h" << 'FFPKT'
+          #include <stdint.h>
+          #include <stddef.h>
+          typedef struct AVPacket AVPacket;
+          enum { AV_PKT_FLAG_KEY=1 };
+          static inline AVPacket *av_packet_alloc(void){return 0;}
+          static inline void av_packet_free(AVPacket **a){(void)a;}
+          static inline void av_init_packet(AVPacket *a){(void)a;}
+          static inline int av_packet_ref(AVPacket *a){(void)a;return 0;}
+          static inline void av_packet_unref(AVPacket *a){(void)a;}
+          FFPKT
           
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo '#include <stdint.h>' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'typedef struct AVCodecContext AVCodecContext;' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'typedef struct AVCodec AVCodec;' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'typedef struct AVPacket AVPacket;' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'typedef struct AVFrame AVFrame;' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'enum { AV_CODEC_ID_NONE=0, AV_CODEC_ID_H264=27, AV_CODEC_ID_HEVC=173, AV_CODEC_ID_VP8=139, AV_CODEC_ID_VP9=167 };' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'enum { AV_INPUT_BUFFER_PADDING_SIZE=32 };' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline AVCodecContext *avcodec_alloc_context3(const AVCodec *c){(void)c;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline int avcodec_open2(AVCodecContext *a,const AVCodec *b,void **c){(void)a;(void)b;(void)c;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline int avcodec_send_packet(AVCodecContext *a,const AVPacket *b){(void)a;(void)b;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline int avcodec_receive_frame(AVCodecContext *a,AVFrame *b){(void)a;(void)b;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline const AVCodec *avcodec_find_decoder(int id){(void)id;return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline void avcodec_free_context(AVCodecContext **a){(void)a;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline AVPacket *av_packet_alloc(void){return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline void av_packet_free(AVPacket **a){(void)a;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline AVFrame *av_frame_alloc(void){return 0;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline void av_frame_free(AVFrame **a){(void)a;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
-          echo 'static inline void avcodec_flush_buffers(AVCodecContext *a){(void)a;}' >> "$APS3E_CPP/ffmpeg_stubs/libavcodec/avcodec.h"
+          # Comprehensive libavutil types
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/frame.h" << 'FFFRAME'
+          #include <stdint.h>
+          typedef struct AVFrame { int dummy; } AVFrame;
+          typedef struct AVFrameSideData { int dummy; } AVFrameSideData;
+          enum { AV_FRAME_FLAG_KEY=1, AV_FRAME_FLAG_DISCARD=4 };
+          static inline AVFrame *av_frame_alloc(void){return 0;}
+          static inline void av_frame_free(AVFrame **a){(void)a;}
+          static inline void av_frame_unref(AVFrame *a){(void)a;}
+          static inline void av_frame_set_side_data(AVFrame *a,int b,void *c){(void)a;(void)b;(void)c;}
+          FFFRAME
           
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavformat/avformat.h"
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libswresample/swresample.h"
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/buffer.h" << 'FFBUF'
+          #include <stddef.h>
+          typedef struct AVBufferRef { int dummy; } AVBufferRef;
+          typedef struct AVBuffer { int dummy; } AVBuffer;
+          static inline AVBufferRef *av_buffer_ref(AVBufferRef *a){(void)a;return 0;}
+          static inline void av_buffer_unref(AVBufferRef **a){(void)a;}
+          FFBUF
           
-          # Additional libavutil headers
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/dict.h"
-          echo 'typedef struct AVDictionary { int dummy; } AVDictionary;' >> "$APS3E_CPP/ffmpeg_stubs/libavutil/dict.h"
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/channel_layout.h"
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/samplefmt.h"
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/mathematics.h"
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/libavutil/error.h"
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/mem.h" << 'FFMEM'
+          #include <stddef.h>
+          static inline void *av_malloc(size_t a){(void)a;return 0;}
+          static inline void av_free(void *a){(void)a;}
+          static inline void av_freep(void *a){(void)a;}
+          static inline char *av_strdup(const char *a){(void)a;return 0;}
+          FFMEM
           
-          echo "Created ffmpeg stub headers"
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/log.h" << 'FFLOG'
+          enum { AV_LOG_QUIET=-8, AV_LOG_PANIC=0, AV_LOG_FATAL=8, AV_LOG_ERROR=16, AV_LOG_WARNING=24, AV_LOG_INFO=32, AV_LOG_VERBOSE=40, AV_LOG_DEBUG=48, AV_LOG_TRACE=56 };
+          #define AV_LOG_SKIP_REPEATED 1
+          static inline void av_log_set_level(int a){(void)a;}
+          static inline int av_log_get_level(void){return 0;}
+          FFLOG
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/opt.h" << 'FFOPT'
+          typedef struct AVOption { int dummy; } AVOption;
+          static inline int av_opt_set(void *a,const char *b,const char *c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int av_opt_set_int(void *a,const char *b,long long c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int av_opt_set_double(void *a,const char *b,double c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int av_opt_set_channel_layout(void *a,const char *b,long long c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int av_opt_set_sample_fmt(void *a,const char *b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          FFOPT
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/channel_layout.h" << 'FFCH'
+          #include <stdint.h>
+          enum { AV_CH_LAYOUT_STEREO=3, AV_CH_LAYOUT_SURROUND=7, AV_CH_LAYOUT_5POINT1=63, AV_CH_LAYOUT_7POINT1=255 };
+          static inline int av_get_channel_layout_nb_channels(long long a){(void)a;return 2;}
+          static inline long long av_get_default_channel_layout(int a){(void)a;return 3;}
+          FFCH
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/samplefmt.h" << 'FFSF'
+          enum { AV_SAMPLE_FMT_NONE=-1, AV_SAMPLE_FMT_U8=0, AV_SAMPLE_FMT_S16=1, AV_SAMPLE_FMT_S32=2, AV_SAMPLE_FMT_FLT=3, AV_SAMPLE_FMT_DBL=4, AV_SAMPLE_FMT_S16P=5, AV_SAMPLE_FMT_S32P=6, AV_SAMPLE_FMT_FLTP=7, AV_SAMPLE_FMT_DBLP=8 };
+          static inline int av_get_bytes_per_sample(int a){(void)a;return 4;}
+          static inline int av_sample_fmt_is_planar(int a){(void)a;return 0;}
+          FFSF
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/common.h" << 'FFCOM'
+          #define AV_ROUND_ZERO 0
+          #define AV_ROUND_UP 1
+          #define AV_ROUND_DOWN 2
+          #define AV_ROUND_NEAR_INF 5
+          #define AV_TIME_BASE 1000000
+          #define FFALIGN(x,a) (((x)+(a)-1)&~((a)-1))
+          static inline int av_rescale_rnd(long long a,long long b,long long c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int64_t av_rescale_q(int64_t a,int b,int c){(void)a;(void)b;(void)c;return 0;}
+          static inline int av_clip(int a,int b,int c){(void)a;(void)b;(void)c;return 0;}
+          static inline int64_t av_rescale(int64_t a,int64_t b,int64_t c){(void)a;(void)b;(void)c;return 0;}
+          FFCOM
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/dict.h" << 'FFDICT'
+          typedef struct AVDictionary AVDictionary;
+          typedef struct AVDictionaryEntry { char *key; char *value; } AVDictionaryEntry;
+          static inline AVDictionaryEntry *av_dict_get(const AVDictionary *a,const char *b,const AVDictionaryEntry *c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int av_dict_set(AVDictionary **a,const char *b,const char *c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline void av_dict_free(AVDictionary **a){(void)a;}
+          FFDICT
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/pixfmt.h" << 'FFPIX'
+          typedef enum AVPixelFormat { AV_PIX_FMT_NONE=-1, AV_PIX_FMT_YUV420P=0, AV_PIX_FMT_YUYV422=1, AV_PIX_FMT_RGB24=2, AV_PIX_FMT_BGR24=3, AV_PIX_FMT_RGBA=26, AV_PIX_FMT_BGRA=28, AV_PIX_FMT_NV12=23, AV_PIX_FMT_VIDEOTOOLBOX=100 } AVPixelFormat;
+          FFPIX
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/error.h" << 'FFERR'
+          #include <stdint.h>
+          #define FFERRTAG(a,b,c,d) ((int)((a)|(b)<<8|(c)<<16|(d)<<24))
+          static inline char *av_make_error_string(char *a,size_t b,int c){(void)b;(void)c;a[0]=0;return a;}
+          FFERR
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/mathematics.h" << 'FFMATH'
+          #define AV_ROUND_ZERO 0
+          #define AV_ROUND_UP 1
+          #define AV_ROUND_DOWN 2
+          static inline int64_t av_rescale_q_rnd(int64_t a,int b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          FFMATH
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/rational.h" << 'FFRAT'
+          typedef struct AVRational { int num; int den; } AVRational;
+          static inline AVRational av_mul_q(AVRational a,AVRational b){(void)a;(void)b;AVRational r={0,1};return r;}
+          static inline AVRational av_div_q(AVRational a,AVRational b){(void)a;(void)b;AVRational r={0,1};return r;}
+          static inline AVRational av_sub_q(AVRational a,AVRational b){(void)a;(void)b;AVRational r={0,1};return r;}
+          static inline int av_cmp_q(AVRational a,AVRational b){(void)a;(void)b;return 0;}
+          static inline AVRational av_inv_q(AVRational a){(void)a;AVRational r={1,1};return r;}
+          FFRAT
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/imgutils.h" << 'FFIMG'
+          #include <stdint.h>
+          static inline int av_image_fill_linesizes(int a[],int b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int av_image_fill_pointers(uint8_t *a[],int b,int c,uint8_t *d,const int e[]){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
+          static inline int av_image_get_buffer_size(int a,int b,int c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int av_image_copy_to_buffer(uint8_t *a,int b,const uint8_t *c[],const int d[],int e,int f,int g){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;return 0;}
+          FFIMG
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/cpu.h" << 'FFCPU'
+          enum { AV_CPU_FLAG_SSE=1, AV_CPU_FLAG_SSE2=2, AV_CPU_FLAG_SSE3=4, AV_CPU_FLAG_SSSE3=8, AV_CPU_FLAG_SSE41=16, AV_CPU_FLAG_SSE42=32, AV_CPU_FLAG_AVX=64, AV_CPU_FLAG_AVX2=128 };
+          static inline int av_cpu_count(void){return 1;}
+          FFCPU
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/md5.h" << 'FFMD5'
+          static inline void av_md5_sum(char *a,const uint8_t *b,unsigned c){(void)a;(void)b;(void)c;}
+          FFMD5
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/crc.h" << 'FFCRC'
+          typedef struct AVCRC { int dummy; } AVCRC;
+          FFCRC
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/avstring.h" << 'FFSTR'
+          static inline size_t av_strlcpy(char *a,const char *b,size_t c){(void)a;(void)b;(void)c;return 0;}
+          static inline size_t av_strlcat(char *a,const char *b,size_t c){(void)a;(void)b;(void)c;return 0;}
+          FFSTR
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/bprint.h" << 'FFBPR'
+          typedef struct AVBPrint { char *str; unsigned size; unsigned reserved; int internal_size; } AVBPrint;
+          static inline void av_bprint_init(AVBPrint *a,unsigned b){(void)a;(void)b;}
+          static inline void av_bprint_finalize(AVBPrint *a,char **b){(void)a;(void)b;}
+          static inline void av_bprintf(AVBPrint *a,const char *fmt,...){(void)a;(void)fmt;}
+          FFBPR
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/parse.h" << 'FFPARSE'
+          typedef struct AVCodecParserContext { int dummy; } AVCodecParserContext;
+          typedef struct AVCodecParser { int dummy; } AVCodecParser;
+          FFPARSE
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/timestamp.h" << 'FFTS'
+          static inline void av_ts_make_string(char *a,int64_t b){(void)a;(void)b;}
+          static inline void av_ts_make_time_string(char *a,int64_t b,const AVRational *c){(void)a;(void)b;(void)c;}
+          FFTS
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/intreadwrite.h" << 'FFIRW'
+          #include <stdint.h>
+          #define AV_RB16(x) (0)
+          #define AV_RB32(x) (0)
+          #define AV_RL16(x) (0)
+          #define AV_RL32(x) (0)
+          #define AV_WB16(p,v) do{(void)(p);(void)(v);}while(0)
+          #define AV_WB32(p,v) do{(void)(p);(void)(v);}while(0)
+          FFIRW
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/hwcontext.h" << 'FFHW'
+          typedef struct AVHWDeviceContext { int dummy; } AVHWDeviceContext;
+          typedef struct AVHWFramesContext { int dummy; } AVHWFramesContext;
+          FFHW
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/eval.h" << 'FFEV'
+          typedef struct AVExpr { int dummy; } AVExpr;
+          FFEV
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/pixdesc.h" << 'FFPD'
+          typedef struct AVPixFmtDescriptor { int dummy; } AVPixFmtDescriptor;
+          FFPD
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/mastering_display_metadata.h" << 'FFMDM'
+          typedef struct AVMasteringDisplayMetadata { int dummy; } AVMasteringDisplayMetadata;
+          typedef struct AVContentLightMetadata { int dummy; } AVContentLightMetadata;
+          FFMDM
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/hdr_dynamic_metadata.h" << 'FFHDR'
+          typedef struct AVDynamicHDRPlus { int dummy; } AVDynamicHDRPlus;
+          FFHDR
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/film_grain_params.h" << 'FFFGP'
+          typedef struct AVFilmGrainParams { int dummy; } AVFilmGrainParams;
+          FFFGP
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavutil/audio_fifo.h" << 'FFAF'
+          typedef struct AVAudioFifo { int dummy; } AVAudioFifo;
+          static inline AVAudioFifo *av_audio_fifo_alloc(int a,int b){(void)a;(void)b;return 0;}
+          static inline void av_audio_fifo_free(AVAudioFifo *a){(void)a;}
+          FFAF
+          
+          # Comprehensive libavformat types
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavformat/avformat.h" << 'FFMT'
+          #include <stdint.h>
+          typedef struct AVFormatContext { int dummy; } AVFormatContext;
+          typedef struct AVInputFormat { int dummy; } AVInputFormat;
+          typedef struct AVOutputFormat { int dummy; } AVOutputFormat;
+          typedef struct AVStream { int dummy; } AVStream;
+          typedef struct AVPacketList { int dummy; } AVPacketList;
+          static inline AVFormatContext *avformat_alloc_context(void){return 0;}
+          static inline void avformat_free_context(AVFormatContext *a){(void)a;}
+          static inline int avformat_open_input(AVFormatContext **a,const char *b,AVInputFormat *c,AVDictionary **d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline int avformat_find_stream_info(AVFormatContext *a,AVDictionary **b){(void)a;(void)b;return 0;}
+          static inline void avformat_close_input(AVFormatContext **a){(void)a;}
+          static inline int av_read_frame(AVFormatContext *a,AVPacket *b){(void)a;(void)b;return 0;}
+          static inline int av_seek_frame(AVFormatContext *a,int b,int64_t c,int d){(void)a;(void)b;(void)c;(void)d;return 0;}
+          static inline AVStream *avformat_new_stream(AVFormatContext *a,const void *b){(void)a;(void)b;return 0;}
+          FFMT
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libavformat/avio.h" << 'FFIO'
+          typedef struct AVIOContext { int dummy; } AVIOContext;
+          FFIO
+          
+          # Comprehensive libswresample types
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libswresample/swresample.h" << 'FFSWR'
+          typedef struct SwrContext { int dummy; } SwrContext;
+          static inline SwrContext *swr_alloc(void){return 0;}
+          static inline int swr_init(SwrContext *a){(void)a;return 0;}
+          static inline void swr_free(SwrContext **a){(void)a;}
+          static inline int swr_convert(SwrContext *a,uint8_t **b,int c,const uint8_t **d,int e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}
+          FFSWR
+          
+          cat >> "$APS3E_CPP/ffmpeg_stubs/libswscale/swscale.h" << 'FFSWS'
+          #include <stdint.h>
+          typedef struct SwsContext SwsContext;
+          enum { SWS_FAST_BILINEAR=1, SWS_BILINEAR=2, SWS_BICUBIC=4, SWS_POINT=8 };
+          static inline SwsContext *sws_getContext(int a,int b,int c,int d,int e,int f,int g,void *h,void *i,void *j){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;return 0;}
+          static inline SwsContext *sws_getCachedContext(SwsContext *c,int a,int b,int d,int e,int f,int g,int h,void *i,void *j,void *k){(void)c;(void)a;(void)b;(void)d;(void)e;(void)f;(void)g;(void)h;(void)i;(void)j;(void)k;return 0;}
+          static inline int sws_scale(SwsContext *c,const uint8_t *const a[],const int b[],int d,int e,uint8_t *const f[],const int g[]){(void)c;(void)a;(void)b;(void)d;(void)e;(void)f;(void)g;return 0;}
+          static inline void sws_freeContext(SwsContext *c){(void)c;}
+          FFSWS
+          
+          echo "Created comprehensive ffmpeg stub headers"
           
           # Create stub libusb.h (comprehensive types needed by rpcs3)
           cat > "$APS3E_CPP/ffmpeg_stubs/libusb.h" << 'LIBUSB_EOF'
