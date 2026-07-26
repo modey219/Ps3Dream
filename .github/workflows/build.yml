@@ -798,6 +798,8 @@ jobs:
             sed -i '' '/sceNp2\.cpp/d; /sceNpClans\.cpp/d; /sceNpCommerce2\.cpp/d; /sceNp\.cpp/d; /sceNpMatchingInt\.cpp/d; /sceNpPlus\.cpp/d; /sceNpSns\.cpp/d; /sceNpTrophy\.cpp/d; /sceNpTus\.cpp/d; /sceNpUtil\.cpp/d; /cellSysutilNpEula\.cpp/d' "$EMU_CMAKE"
             # Remove cellDmuxPamf.cpp (uses std::ranges::views::join not available on Apple Clang 15.4)
             sed -i '' '/cellDmuxPamf\.cpp/d' "$EMU_CMAKE"
+            # Remove RB3Midi files (need rtmidi submodule not available on iOS)
+            sed -i '' '/RB3MidiKeyboard\.cpp/d; /RB3MidiGuitar\.cpp/d' "$EMU_CMAKE"
             echo "Patched Emu/CMakeLists.txt to remove NP sources and unsupported modules"
           fi
           
