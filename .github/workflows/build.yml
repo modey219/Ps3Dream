@@ -661,6 +661,13 @@ jobs:
           typedef unsigned char ALboolean;
           typedef float ALfloat;
           typedef void ALvoid;
+          #define AL_TRUE 1
+          #define AL_FALSE 0
+          #define AL_FORMAT_MONO16 0x1101
+          #define AL_FORMAT_STEREO16 0x1103
+          #define AL_FORMAT_QUAD16 0x1234
+          #define AL_FORMAT_MONO_FLOAT32 0x10010
+          #define AL_FORMAT_STEREO_FLOAT32 0x10012
           static inline void alGenSources(ALsizei n,ALuint *s){(void)n;(void)s;}
           static inline void alDeleteSources(ALsizei n,const ALuint *s){(void)n;(void)s;}
           static inline void alSourcei(ALuint s,ALenum p,ALint v){(void)s;(void)p;(void)v;}
@@ -687,12 +694,21 @@ jobs:
           typedef int ALCsizei;
           typedef unsigned char ALCboolean;
           typedef const char* ALCstring;
+          #define ALC_TRUE 1
+          #define ALC_FALSE 0
           static inline ALCdevice* alcOpenDevice(ALCstring d){(void)d;return 0;}
           static inline ALCboolean alcCloseDevice(ALCdevice *d){(void)d;return 1;}
           static inline ALCcontext* alcCreateContext(ALCdevice *d,const ALCint *a){(void)d;(void)a;return 0;}
           static inline ALCboolean alcMakeContextCurrent(ALCcontext *c){(void)c;return 1;}
           static inline void alcDestroyContext(ALCcontext *c){(void)c;}
           static inline ALCenum alcGetError(ALCdevice *d){(void)d;return 0;}
+          static inline ALCstring alcGetString(ALCdevice *d,ALCenum p){(void)d;(void)p;return "";}
+          static inline ALCboolean alcIsExtensionPresent(ALCdevice *d,ALCstring e){(void)d;(void)e;return 0;}
+          static inline ALCdevice* alcCaptureOpenDevice(ALCstring d,ALCuint r,ALCenum f,ALCsizei s){(void)d;(void)r;(void)f;(void)s;return 0;}
+          static inline ALCboolean alcCaptureCloseDevice(ALCdevice *d){(void)d;return 1;}
+          static inline void alcCaptureStart(ALCdevice *d){(void)d;}
+          static inline void alcCaptureStop(ALCdevice *d){(void)d;}
+          static inline void alcCaptureSamples(ALCdevice *d,ALvoid *b,ALCsizei s){(void)d;(void)b;(void)s;}
           ALCEOF
           
           echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/alext.h"
