@@ -686,6 +686,7 @@ jobs:
           
           cat > "$APS3E_CPP/ffmpeg_stubs/alc.h" << 'ALCEOF'
           #pragma once
+          #include "al.h"
           typedef void ALCdevice;
           typedef void ALCcontext;
           typedef int ALCenum;
@@ -696,6 +697,8 @@ jobs:
           typedef const char* ALCstring;
           #define ALC_TRUE 1
           #define ALC_FALSE 0
+          #define ALC_NO_ERROR 0
+          #define ALC_CAPTURE_SAMPLES 0x312
           static inline ALCdevice* alcOpenDevice(ALCstring d){(void)d;return 0;}
           static inline ALCboolean alcCloseDevice(ALCdevice *d){(void)d;return 1;}
           static inline ALCcontext* alcCreateContext(ALCdevice *d,const ALCint *a){(void)d;(void)a;return 0;}
@@ -712,6 +715,12 @@ jobs:
           ALCEOF
           
           echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/alext.h"
+          
+          # Create AL/ subdirectory for <AL/al.h>, <AL/alc.h>, <AL/alext.h> includes
+          mkdir -p "$APS3E_CPP/ffmpeg_stubs/AL"
+          cp "$APS3E_CPP/ffmpeg_stubs/al.h" "$APS3E_CPP/ffmpeg_stubs/AL/al.h"
+          cp "$APS3E_CPP/ffmpeg_stubs/alc.h" "$APS3E_CPP/ffmpeg_stubs/AL/alc.h"
+          cp "$APS3E_CPP/ffmpeg_stubs/alext.h" "$APS3E_CPP/ffmpeg_stubs/AL/alext.h"
           
           # Create stub rtmidi
           cat > "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" << 'RTMIDI'
