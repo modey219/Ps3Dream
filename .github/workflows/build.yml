@@ -90,6 +90,12 @@ jobs:
           }
           ADREOF2
           
+          # Download Vulkan Memory Allocator header
+          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/VulkanMemoryAllocator/include"
+          curl -L -o "$APS3E_CPP/rpcs3/3rdparty/VulkanMemoryAllocator/include/vk_mem_alloc.h" \
+            "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/master/include/vk_mem_alloc.h"
+          ls -la "$APS3E_CPP/rpcs3/3rdparty/VulkanMemoryAllocator/include/vk_mem_alloc.h"
+          
           mkdir -p "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial"
           cat > "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial/CMakeLists.txt" << 'EOF'
           add_library(xxhash INTERFACE)
@@ -1050,6 +1056,7 @@ jobs:
           add_library(3rdparty_sdl3 INTERFACE)
           add_library(3rdparty_protobuf INTERFACE)
           add_library(3rdparty_vulkanmemoryallocator INTERFACE)
+          target_include_directories(3rdparty_vulkanmemoryallocator INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/VulkanMemoryAllocator/include)
           add_library(3rdparty_opencv INTERFACE)
           add_library(3rdparty_feralinteractive INTERFACE)
           add_library(3rdparty::zlib ALIAS 3rdparty_zlib)
