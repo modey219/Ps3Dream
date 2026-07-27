@@ -6,8 +6,6 @@
 #if defined(__OBJC__)
 #import <QuartzCore/CAMetalLayer.h>
 #import <UIKit/UIKit.h>
-#else
-@class CAMetalLayer;
 #endif
 
 #ifdef __cplusplus
