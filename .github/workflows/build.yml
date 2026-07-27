@@ -33,7 +33,9 @@ jobs:
           mkdir -p MoltenVK-build
           tar xf MoltenVK-ios.tar -C MoltenVK-build
           find MoltenVK-build -name "libMoltenVK.a" -o -name "MoltenVK.xcframework" 2>/dev/null | head -10
-          find MoltenVK-build -name "vulkan.h" 2>/dev/null | head -5
+          find MoltenVK-build -name "mvk_vulkan.h" 2>/dev/null | head -5
+          find MoltenVK-build -type d -name "Headers" 2>/dev/null | head -5
+          ls -la MoltenVK-build/Package/Headers/ 2>/dev/null || echo "No Package/Headers dir"
           
           # Download Vulkan headers if not in MoltenVK tar
           if [ ! -f "MoltenVK-build/Package/Headers/vulkan/vulkan.h" ]; then
@@ -47,6 +49,28 @@ jobs:
             cp -r Vulkan-Headers/include/vk_video MoltenVK-build/vulkan_headers/vk_video
           else
             echo "Vulkan headers found in MoltenVK tar"
+          fi
+          
+          # Ensure MoltenVK/mvk_vulkan.h is findable
+          # Create MoltenVK/ symlinks if headers exist but not under MoltenVK/ subdir
+          for hdr_dir in MoltenVK-build/Package/Headers MoltenVK-build/Headers; do
+            if [ -d "$hdr_dir" ] && [ ! -f "$hdr_dir/MoltenVK/mvk_vulkan.h" ]; then
+              echo "Creating MoltenVK/ symlink in $hdr_dir"
+              mkdir -p "$hdr_dir/MoltenVK"
+              for f in "$hdr_dir"/*.h "$hdr_dir"/mvk_*; do
+                [ -f "$f" ] && ln -sf "$(realpath "$f")" "$hdr_dir/MoltenVK/$(basename "$f")"
+              done
+            fi
+          done
+          # If no Headers dir at all, create a stub mvk_vulkan.h
+          if ! find MoltenVK-build -name "mvk_vulkan.h" -print -quit 2>/dev/null | grep -q .; then
+            echo "mvk_vulkan.h not found anywhere, creating stub"
+            mkdir -p MoltenVK-build/stub_headers/MoltenVK
+            cat > MoltenVK-build/stub_headers/MoltenVK/mvk_vulkan.h << 'MVKEOF'
+#pragma once
+// Stub MoltenVK/mvk_vulkan.h for iOS build
+#include <vulkan/vulkan.h>
+MVKEOF
           fi
 
       - name: Prepare source tree
@@ -1171,6 +1195,9 @@ jobs:
           if(EXISTS "${REPO_ROOT}/MoltenVK-build/Package/Headers")
             target_include_directories(rpcs3_emu PRIVATE "${REPO_ROOT}/MoltenVK-build/Package/Headers")
           endif()
+          if(EXISTS "${REPO_ROOT}/MoltenVK-build/stub_headers")
+            target_include_directories(rpcs3_emu PRIVATE "${REPO_ROOT}/MoltenVK-build/stub_headers")
+          endif()
           if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include")
             target_include_directories(rpcs3_emu PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include")
           endif()
@@ -1217,6 +1244,7 @@ jobs:
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include
             ${REPO_ROOT}/MoltenVK-build/vulkan_headers
             ${REPO_ROOT}/MoltenVK-build/Package/Headers
+            ${REPO_ROOT}/MoltenVK-build/stub_headers
           )
           
           # Many 3rdparty libs are nested git submodules where the real include root
