@@ -66,11 +66,7 @@ jobs:
           if ! find MoltenVK-build -name "mvk_vulkan.h" -print -quit 2>/dev/null | grep -q .; then
             echo "mvk_vulkan.h not found anywhere, creating stub"
             mkdir -p MoltenVK-build/stub_headers/MoltenVK
-            cat > MoltenVK-build/stub_headers/MoltenVK/mvk_vulkan.h << 'MVKEOF'
-#pragma once
-// Stub MoltenVK/mvk_vulkan.h for iOS build
-#include <vulkan/vulkan.h>
-MVKEOF
+            printf '#pragma once\n#include <vulkan/vulkan.h>\n' > MoltenVK-build/stub_headers/MoltenVK/mvk_vulkan.h
           fi
 
       - name: Prepare source tree
