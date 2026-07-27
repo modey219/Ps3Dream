@@ -7,6 +7,13 @@
 
 extern void ppu_register_function_at(u32, u32, ppu_intrp_func_t);
 
+// Stub iso_fs for iOS build (removed from newer rpcs3)
+class iso_fs {
+public:
+    static std::unique_ptr<iso_fs> from_fd(int fd) { (void)fd; return nullptr; }
+    bool load() { return false; }
+};
+
 namespace ae{
     extern std::string game_id;
     extern bool install_firmware(int fd);

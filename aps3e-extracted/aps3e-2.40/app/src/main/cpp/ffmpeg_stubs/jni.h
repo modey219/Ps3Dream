@@ -97,6 +97,25 @@ struct JNINativeInterface_ {
     jbyte (*GetByteField)(JNIEnv*, jobject, jfieldID);
     jint (*RegisterNatives)(JNIEnv*, jclass, const JNINativeMethod*, jint);
     jboolean (*IsInstanceOf)(JNIEnv*, jobject, jclass);
+    jbyteArray (*NewByteArray)(JNIEnv*, jsize);
+    void (*SetByteField)(JNIEnv*, jobject, jfieldID, jbyte);
+    void (*SetShortField)(JNIEnv*, jobject, jfieldID, jshort);
+    jshort (*GetShortField)(JNIEnv*, jobject, jfieldID);
+    jchar (*GetCharField)(JNIEnv*, jobject, jfieldID);
+    void (*SetCharField)(JNIEnv*, jobject, jfieldID, jchar);
+    jfloat (*GetFloatField2)(JNIEnv*, jobject, jfieldID);
+    void (*SetFloatField)(JNIEnv*, jobject, jfieldID, jfloat);
+    jdouble (*GetDoubleField2)(JNIEnv*, jobject, jfieldID);
+    void (*SetDoubleField)(JNIEnv*, jobject, jfieldID, jdouble);
+    void (*SetStaticBooleanField)(JNIEnv*, jclass, jfieldID, jboolean);
+    void (*SetStaticObjectField)(JNIEnv*, jclass, jfieldID, jobject);
+    jobject (*CallNonvirtualObjectMethodV)(JNIEnv*, jobject, jclass, jmethodID, void*);
+    jint (*CallNonvirtualIntMethodV)(JNIEnv*, jobject, jclass, jmethodID, void*);
+    jboolean (*ExceptionOccurred)(JNIEnv*);
+    void (*MonitorEnter)(JNIEnv*, jobject);
+    void (*MonitorExit)(JNIEnv*, jobject);
+    jobject (*NewDirectByteBuffer)(JNIEnv*, void*, jlong);
+    void* (*GetDirectBufferAddress)(JNIEnv*, jobject);
 };
 
 struct JNIEnv_ {
@@ -151,8 +170,23 @@ struct JNIEnv_ {
     jint CallStaticIntMethod(jclass c, jmethodID m, ...) { return 0; }
     void CallStaticVoidMethod(jclass c, jmethodID m, ...) {}
     void SetStaticIntField(jclass c, jfieldID f, jint v) {}
-    jint RegisterNatives(jclass c, const JNINativeMethod* m, jint n) { return 0; }
-    jboolean IsInstanceOf(jobject o, jclass c) { return 0; }
+    jint RegisterNatives(jclass c, const JNINativeMethod* m, jint n) { return functions->RegisterNatives(this, c, m, n); }
+    jboolean IsInstanceOf(jobject o, jclass c) { return functions->IsInstanceOf(this, o, c); }
+    jbyteArray NewByteArray(jsize s) { return functions->NewByteArray(this, s); }
+    void SetByteField(jobject o, jfieldID f, jbyte v) { functions->SetByteField(this, o, f, v); }
+    void SetShortField(jobject o, jfieldID f, jshort v) { functions->SetShortField(this, o, f, v); }
+    jshort GetShortField(jobject o, jfieldID f) { return functions->GetShortField(this, o, f); }
+    jchar GetCharField(jobject o, jfieldID f) { return functions->GetCharField(this, o, f); }
+    void SetCharField(jobject o, jfieldID f, jchar v) { functions->SetCharField(this, o, f, v); }
+    void SetFloatField(jobject o, jfieldID f, jfloat v) { functions->SetFloatField(this, o, f, v); }
+    void SetDoubleField(jobject o, jfieldID f, jdouble v) { functions->SetDoubleField(this, o, f, v); }
+    void SetStaticBooleanField(jclass c, jfieldID f, jboolean v) { functions->SetStaticBooleanField(this, c, f, v); }
+    void SetStaticObjectField(jclass c, jfieldID f, jobject v) { functions->SetStaticObjectField(this, c, f, v); }
+    jboolean ExceptionOccurred() { return functions->ExceptionOccurred(this); }
+    void MonitorEnter(jobject o) { functions->MonitorEnter(this, o); }
+    void MonitorExit(jobject o) { functions->MonitorExit(this, o); }
+    jobject NewDirectByteBuffer(void* a, jlong s) { return functions->NewDirectByteBuffer(this, a, s); }
+    void* GetDirectBufferAddress(jobject o) { return functions->GetDirectBufferAddress(this, o); }
 };
 
 struct JavaVM_ {

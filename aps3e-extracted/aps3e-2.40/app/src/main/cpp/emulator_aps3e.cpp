@@ -51,7 +51,8 @@ static jboolean j_install_pkg(JNIEnv* env,jobject self,jint pkg_fd){
 }
 
 static jboolean j_install_edat(JNIEnv* env,jobject self,jint edat_fd){
-    fs::file edat_f=fs::file::from_fd(edat_fd);
+    (void)edat_fd;
+    fs::file edat_f;
     return ae::install_edat(edat_f);
 }
 
@@ -637,11 +638,8 @@ static jstring generate_config_xml(JNIEnv* env,jobject self){
             case cfg::type::_int:
             case cfg::type::uint:
                 out<<"<" SEEKBAR_PREF_TAG " app:title=\"@string/emulator_settings_"<<parent_name_l<<"_"<<key<<"\" \n";
-                out<<"app:min=\""<<node->get_min()<<"\"\n";
-                if(node->get_max()!=-1)
-                    out<<"android:max=\""<<node->get_max()<<"\"\n";
-                else
-                    out<<"android:max=\"0x7fffffff\"\n";
+                out<<"app:min=\"0\"\n";
+                out<<"android:max=\"0x7fffffff\"\n";
                 out<<"app:showSeekBarValue=\"true\"\n";
                 out<<"app:key=\""<<parent_name<<"|"<<name<<"\" />\n";
                 break;

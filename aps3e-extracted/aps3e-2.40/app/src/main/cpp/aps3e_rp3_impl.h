@@ -346,7 +346,7 @@ public:
     void present_frame(std::vector<u8>& data, u32 pitch, u32 width, u32 height, bool is_bgra) const
     {PR;
         utils::video_provider& video_provider = g_fxo->get<utils::video_provider>();
-        video_provider.present_frame(data, pitch, width, height, is_bgra);
+        video_provider.present_frame(std::move(const_cast<std::vector<u8>&>(data)), pitch, width, height, is_bgra);
     }
 
     void take_screenshot(std::vector<u8>&& sshot_data, u32 sshot_width, u32 sshot_height, bool is_bgra) {PR;}
@@ -359,11 +359,11 @@ public:
     android_music_handler(){PR;}
     ~android_music_handler(){PR;}
 
-    void stop(){PR;m_state = CELL_MUSIC_PB_STATUS_STOP;}
-    void pause(){PR;m_state = CELL_MUSIC_PB_STATUS_PAUSE;}
-    void play(const std::string& path){PR;m_state = CELL_MUSIC_PB_STATUS_PLAY;}
-    void fast_forward(const std::string& path){PR;m_state = CELL_MUSIC_PB_STATUS_FASTFORWARD;}
-    void fast_reverse(const std::string& path){PR;m_state = CELL_MUSIC_PB_STATUS_FASTREVERSE;}
+    void stop(){PR;}
+    void pause(){PR;}
+    void play(const std::string& path){PR;}
+    void fast_forward(const std::string& path){PR;}
+    void fast_reverse(const std::string& path){PR;}
     void set_volume(f32 volume){PR;}
     f32 get_volume() const{PR;return 0;}
 };
@@ -372,37 +372,9 @@ class android_save_dialog:public SaveDialogBase{
 public:
     s32 ShowSaveDataList(std::vector<SaveDataEntry>& save_entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) override
     {
-        LOGI("ShowSaveDataList(save_entries=%d, focused=%d, op=0x%x, listSet=*0x%x, enable_overlay=%d)", save_entries.size(), focused, op, listSet, enable_overlay);
-
-        // TODO: Implement proper error checking in savedata_op?
-        const bool use_end = sysutil_send_system_cmd(CELL_SYSUTIL_DRAWING_BEGIN, 0) >= 0;
-
-        if (!use_end)
-        {
-            LOGE("ShowSaveDataList(): Not able to notify DRAWING_BEGIN callback because one has already been sent!");
-        }
-
-        // TODO: Install native shell as an Emu callback
-        if (auto manager = g_fxo->try_get<rsx::overlays::display_manager>())
-        {
-            LOGI("ShowSaveDataList: Showing native UI dialog");
-
-            const s32 result = manager->create<rsx::overlays::save_dialog>()->show(save_entries, focused, op, listSet, enable_overlay);
-            if (result != rsx::overlays::user_interface::selection_code::error)
-            {
-                LOGI("ShowSaveDataList: Native UI dialog returned with selection %d", result);
-                if (use_end) sysutil_send_system_cmd(CELL_SYSUTIL_DRAWING_END, 0);
-                return result;
-            }
-            LOGE("ShowSaveDataList: Native UI dialog returned error");
-        }
-
-        //if (!Emu.HasGui())
-        {
-            LOGI("ShowSaveDataList(): Aborting: Emulation has no GUI attached");
-            if (use_end) sysutil_send_system_cmd(CELL_SYSUTIL_DRAWING_END, 0);
-            return -2;
-        }
+        LOGI("ShowSaveDataList stub called");
+        return -2;
+    }
 
         // Fall back to front-end GUI
         /*cellSaveData.notice("ShowSaveDataList(): Using fallback GUI");
