@@ -54,7 +54,20 @@ jobs:
           # Always create MoltenVK/mvk_vulkan.h stub as fallback
           mkdir -p MoltenVK-build/stub_headers/MoltenVK
           if [ ! -f MoltenVK-build/Package/Headers/MoltenVK/mvk_vulkan.h ]; then
-            printf '#pragma once\n#include <vulkan/vulkan.h>\n' > MoltenVK-build/stub_headers/MoltenVK/mvk_vulkan.h
+            # Try to find real MoltenVK headers anywhere in the tar extraction
+            REAL_MVK_VULKAN=$(find MoltenVK-build -name "mvk_vulkan.h" 2>/dev/null | head -1)
+            REAL_MVK_PRIV=$(find MoltenVK-build -name "mvk_private_api.h" 2>/dev/null | head -1)
+            if [ -n "$REAL_MVK_VULKAN" ]; then
+              cp "$REAL_MVK_VULKAN" MoltenVK-build/stub_headers/MoltenVK/mvk_vulkan.h
+            else
+              printf '#pragma once\n#include <vulkan/vulkan.h>\n' > MoltenVK-build/stub_headers/MoltenVK/mvk_vulkan.h
+            fi
+            if [ -n "$REAL_MVK_PRIV" ]; then
+              cp "$REAL_MVK_PRIV" MoltenVK-build/stub_headers/MoltenVK/mvk_private_api.h
+            else
+              # Minimal stub for mvk_private_api.h
+              printf '#pragma once\n#include <vulkan/vulkan.h>\ntypedef uint32_t MTLLanguageVersion;\ntypedef uint32_t MTLArgumentBuffersTier;\ntypedef struct { VkBool32 debugMode; } MVKConfiguration;\ntypedef struct { uint32_t count; double latest; double previous; double average; double minimum; double maximum; } MVKPerformanceTracker;\ntypedef struct { MVKPerformanceTracker shaderCompilation; } MVKPerformanceStatistics;\n' > MoltenVK-build/stub_headers/MoltenVK/mvk_private_api.h
+            fi
           fi
 
       - name: Prepare source tree
