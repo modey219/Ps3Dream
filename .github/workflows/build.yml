@@ -1204,6 +1204,8 @@ jobs:
             ${REPO_ROOT}/Ps3Dream/MoltenVK
             ${REPO_ROOT}/Ps3Dream/Bridge
             ${REPO_ROOT}/Ps3Dream
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include
+            ${REPO_ROOT}/MoltenVK-build/vulkan_headers
           )
           
           # Many 3rdparty libs are nested git submodules where the real include root
