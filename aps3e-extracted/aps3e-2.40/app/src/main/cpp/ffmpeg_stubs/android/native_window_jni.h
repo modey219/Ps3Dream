@@ -18,3 +18,5 @@ static inline ANativeWindow* ANativeWindow_fromSurface(void* env, void* surface)
 
 static inline void ANativeWindow_acquire(ANativeWindow* window) { (void)window; }
 static inline void ANativeWindow_release(ANativeWindow* window) { (void)window; }
+static inline int ANativeWindow_getWidth(ANativeWindow* window) { return window ? window->width : 0; }
+static inline int ANativeWindow_getHeight(ANativeWindow* window) { return window ? window->height : 0; }
