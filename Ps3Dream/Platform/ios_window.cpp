@@ -16,7 +16,7 @@ void ios_window_resize(int width, int height) {
     g_ios_window_height = height;
 }
 
-void ios_window_set_layer(CAMetalLayer* layer) {
+void ios_window_set_layer(void* layer) {
     if (!g_ios_window) {
         g_ios_window = (Ps3DreamWindow*)calloc(1, sizeof(Ps3DreamWindow));
     }
