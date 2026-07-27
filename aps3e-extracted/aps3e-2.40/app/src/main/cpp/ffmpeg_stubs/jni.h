@@ -14,6 +14,7 @@ typedef int32_t jint;
 typedef int64_t jlong;
 typedef uint8_t jboolean;
 typedef int8_t jbyte;
+typedef uint16_t jchar;
 typedef float jfloat;
 typedef double jdouble;
 typedef jint jsize;
@@ -27,8 +28,15 @@ typedef jobject jintArray;
 typedef jobject jbyteArray;
 typedef jobject jfloatArray;
 typedef jobject jdoubleArray;
+typedef jobject jcharArray;
 typedef void* jfieldID;
 typedef void* jmethodID;
+
+struct JNINativeMethod {
+    const char* name;
+    const char* signature;
+    void* fnPtr;
+};
 
 struct JNIEnv_;
 struct JavaVM_;
@@ -87,6 +95,8 @@ struct JNINativeInterface_ {
     jfloat (*GetFloatField)(JNIEnv*, jobject, jfieldID);
     jdouble (*GetDoubleField)(JNIEnv*, jobject, jfieldID);
     jbyte (*GetByteField)(JNIEnv*, jobject, jfieldID);
+    jint (*RegisterNatives)(JNIEnv*, jclass, const JNINativeMethod*, jint);
+    jboolean (*IsInstanceOf)(JNIEnv*, jobject, jclass);
 };
 
 struct JNIEnv_ {
@@ -141,14 +151,20 @@ struct JNIEnv_ {
     jint CallStaticIntMethod(jclass c, jmethodID m, ...) { return 0; }
     void CallStaticVoidMethod(jclass c, jmethodID m, ...) {}
     void SetStaticIntField(jclass c, jfieldID f, jint v) {}
+    jint RegisterNatives(jclass c, const JNINativeMethod* m, jint n) { return 0; }
+    jboolean IsInstanceOf(jobject o, jclass c) { return 0; }
 };
 
 struct JavaVM_ {
-    jint (*GetEnv)(JavaVM*, void**, jint);
-    jint (*AttachCurrentThread)(JavaVM*, JNIEnv**, void*);
-    jint (*DetachCurrentThread)(JavaVM*);
-    jint GetEnv(void** env, jint ver) { return GetEnv(this, env, ver); }
-    jint AttachCurrentThread(JNIEnv** env, void* a) { return AttachCurrentThread(this, env, a); }
+    jint (*_GetEnv)(JavaVM*, void**, jint);
+    jint (*_AttachCurrentThread)(JavaVM*, JNIEnv**, void*);
+    jint (*_DetachCurrentThread)(JavaVM*);
+    jint GetEnv(void** env, jint ver) { return _GetEnv(this, env, ver); }
+    jint AttachCurrentThread(JNIEnv** env, void* a) { return _AttachCurrentThread(this, env, a); }
+    jint DetachCurrentThread() { return _DetachCurrentThread(this); }
 };
+
+inline jint JNI_GetDefaultJavaVMInitArgs(void* args) { return -1; }
+inline jint JNI_CreateJavaVM(JavaVM** vm, void** env, void* args) { return -1; }
 
 typedef jint (*JNI_OnLoad_func)(JavaVM*, void*);
