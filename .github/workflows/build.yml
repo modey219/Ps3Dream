@@ -891,6 +891,26 @@ jobs:
           echo '#define __API_UNAVAILABLE_MSG(...)' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
           echo '#include_next <pthread.h>' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
           
+          # Create android/log.h stub for iOS
+          mkdir -p "$APS3E_CPP/ffmpeg_stubs/android"
+          cat > "$APS3E_CPP/ffmpeg_stubs/android/log.h" << 'ALOGEOF'
+          #pragma once
+          #include <stdarg.h>
+          typedef enum {
+            ANDROID_LOG_UNKNOWN=0, ANDROID_LOG_DEFAULT=1,
+            ANDROID_LOG_VERBOSE=2, ANDROID_LOG_DEBUG=3,
+            ANDROID_LOG_INFO=4, ANDROID_LOG_WARN=5,
+            ANDROID_LOG_ERROR=6, ANDROID_LOG_FATAL=7,
+            ANDROID_LOG_SILENT=8
+          } android_LogPriority;
+          static inline int __android_log_print(int prio, const char* tag, const char* fmt, ...) {
+            (void)prio;(void)tag;(void)fmt;return 0;
+          }
+          static inline int __android_log_write(int prio, const char* tag, const char* text) {
+            (void)prio;(void)tag;(void)text;return 0;
+          }
+          ALOGEOF
+          
           # Create miniupnp stub headers (UPnP disabled but headers still included)
           MINIFILE="$APS3E_CPP/ffmpeg_stubs/miniupnpc.h"
           echo '#pragma once' > "$MINIFILE"
