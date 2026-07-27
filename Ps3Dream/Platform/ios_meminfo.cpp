@@ -2,8 +2,9 @@
 // Uses mach API on iOS instead of /proc/self/maps
 
 #include <stdio.h>
-#include <string>
+#include <string.h>
 #include <sys/types.h>
+#include <sys/sysctl.h>
 #include <mach/mach.h>
 #include <mach/mach_host.h>
 
