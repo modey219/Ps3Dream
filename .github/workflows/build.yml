@@ -33,6 +33,21 @@ jobs:
           mkdir -p MoltenVK-build
           tar xf MoltenVK-ios.tar -C MoltenVK-build
           find MoltenVK-build -name "libMoltenVK.a" -o -name "MoltenVK.xcframework" 2>/dev/null | head -10
+          find MoltenVK-build -name "vulkan.h" 2>/dev/null | head -5
+          
+          # Download Vulkan headers if not in MoltenVK tar
+          if [ ! -f "MoltenVK-build/Package/Headers/vulkan/vulkan.h" ]; then
+            echo "Vulkan headers not in MoltenVK tar, downloading Vulkan-Headers..."
+            git clone --depth 1 --filter=blob:none --sparse https://github.com/KhronosGroup/Vulkan-Headers.git Vulkan-Headers
+            cd Vulkan-Headers
+            git sparse-checkout set include/vulkan include/vk_video include/spirv include/spirv/unified1
+            cd ..
+            ln -sf "$(pwd)/Vulkan-Headers/include/vulkan" MoltenVK-build/vulkan_headers/vulkan 2>/dev/null || true
+            mkdir -p MoltenVK-build/vulkan_headers
+            cp -r Vulkan-Headers/include/vulkan MoltenVK-build/vulkan_headers/vulkan
+          else
+            echo "Vulkan headers found in MoltenVK tar"
+          fi
 
       - name: Prepare source tree
         run: |
@@ -1189,6 +1204,13 @@ jobs:
           set(MVK_LIB "${REPO_ROOT}/MoltenVK-build/Package/Libraries/iOS/libMoltenVK.a")
           if(EXISTS "${MVK_LIB}")
             target_link_libraries(ps3dream_native PRIVATE "${MVK_LIB}")
+          endif()
+          
+          # Vulkan headers
+          if(EXISTS "${REPO_ROOT}/MoltenVK-build/vulkan_headers")
+            target_include_directories(ps3dream_native PRIVATE "${REPO_ROOT}/MoltenVK-build/vulkan_headers")
+          elseif(EXISTS "${REPO_ROOT}/MoltenVK-build/Package/Headers")
+            target_include_directories(ps3dream_native PRIVATE "${REPO_ROOT}/MoltenVK-build/Package/Headers")
           endif()
           CMAKEEOF
 
