@@ -67,7 +67,7 @@ int cpu_get_core_count(){
     return cpu_get_core_info().size();
 }
 int cpu_get_max_mhz(const int core_idx) {
-    std::string path=std::format("/sys/devices/system/cpu/cpu{}/cpufreq/cpuinfo_max_freq", core_idx);
+    std::string path = std::string("/sys/devices/system/cpu/cpu") + std::to_string(core_idx) + "/cpufreq/cpuinfo_max_freq";
     std::ifstream max_freq(path);
     std::string hz;
     std::getline(max_freq, hz);

@@ -756,9 +756,7 @@ namespace ae{
         edat_f.read(edat_data.data(), edat_data.size());
 
         const std::string user_id = "00000001";
-        std::string edat_save_path = std::format("{}dev_hdd0/home/{}/exdata/{}.edat",
-                                                 fs::get_config_dir(), user_id,
-                                                 npd_header.content_id);
+        std::string edat_save_path = fs::get_config_dir() + "dev_hdd0/home/" + user_id + "/exdata/" + npd_header.content_id + ".edat";
         //LOGI("Writing EDAT file to %s",edat_save_path.c_str());
         if (!fs::write_file(edat_save_path, fs::open_mode::create + fs::open_mode::trunc,
                             edat_data)) {
