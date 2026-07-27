@@ -40,11 +40,11 @@ jobs:
             echo "Vulkan headers not in MoltenVK tar, downloading Vulkan-Headers..."
             git clone --depth 1 --filter=blob:none --sparse https://github.com/KhronosGroup/Vulkan-Headers.git Vulkan-Headers
             cd Vulkan-Headers
-            git sparse-checkout set include/vulkan include/vk_video include/spirv include/spirv/unified1
+            git sparse-checkout set include/vulkan include/vk_video
             cd ..
-            ln -sf "$(pwd)/Vulkan-Headers/include/vulkan" MoltenVK-build/vulkan_headers/vulkan 2>/dev/null || true
             mkdir -p MoltenVK-build/vulkan_headers
             cp -r Vulkan-Headers/include/vulkan MoltenVK-build/vulkan_headers/vulkan
+            cp -r Vulkan-Headers/include/vk_video MoltenVK-build/vulkan_headers/vk_video
           else
             echo "Vulkan headers found in MoltenVK tar"
           fi
