@@ -898,6 +898,7 @@ jobs:
           typedef enum { CUBEB_INPUT_PROCESSING_PARAM_NONE=0 } cubeb_input_processing_params;
           typedef struct { cubeb_sample_format format; uint32_t rate; uint32_t channels;
             cubeb_channel_layout layout; cubeb_stream_prefs prefs; cubeb_input_processing_params input_params; } cubeb_stream_params;
+          typedef enum { CUBEB_STATE_STARTED=0, CUBEB_STATE_STOPPED=1, CUBEB_STATE_DRAINED=2, CUBEB_STATE_ERROR=3 } cubeb_state;
           typedef long (*cubeb_data_callback)(cubeb_stream*, void*, void const*, void*, long);
           typedef void (*cubeb_state_callback)(cubeb_stream*, void*, cubeb_state);
           typedef void (*cubeb_device_collection_changed_callback)(cubeb*, void*);
@@ -906,7 +907,6 @@ jobs:
           typedef enum { CUBEB_DEVICE_STATE_DISABLED=0, CUBEB_DEVICE_STATE_UNPLUGGED=1, CUBEB_DEVICE_STATE_ENABLED=2 } cubeb_device_state;
           typedef enum { CUBEB_DEVICE_PREF_NONE=0x00, CUBEB_DEVICE_PREF_MULTIMEDIA=0x01, CUBEB_DEVICE_PREF_VOICE=0x02, CUBEB_DEVICE_PREF_NOTIFICATION=0x04, CUBEB_DEVICE_PREF_ALL=0x0F } cubeb_device_pref;
           typedef enum { CUBEB_OK=0, CUBEB_ERROR=-1, CUBEB_ERROR_INVALID_FORMAT=-2, CUBEB_ERROR_INVALID_PARAMETER=-3, CUBEB_ERROR_NOT_SUPPORTED=-4, CUBEB_ERROR_DEVICE_UNAVAILABLE=-5 } cubeb_result;
-          typedef enum { CUBEB_STATE_STARTED=0, CUBEB_STATE_STOPPED=1, CUBEB_STATE_DRAINED=2, CUBEB_STATE_ERROR=3 } cubeb_state;
           typedef struct { cubeb_devid devid; char const *device_id; char const *friendly_name;
             char const *group_id; char const *vendor_name; cubeb_device_type type;
             cubeb_device_state state; cubeb_device_pref preferred; int format; int default_format;
