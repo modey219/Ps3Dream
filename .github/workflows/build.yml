@@ -76,6 +76,19 @@ jobs:
           # Create stub dirs for missing dependencies
           mkdir -p "$APS3E_CPP/rpcs3/3rdparty/libadrenotools"
           echo "add_library(adrenotools INTERFACE)" > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/CMakeLists.txt"
+          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/include/adrenotools"
+          cat > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/include/adrenotools/priv.h" << 'ADREOF'
+          #pragma once
+          ADREOF
+          cat > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/include/adrenotools/driver.h" << 'ADREOF2'
+          #pragma once
+          #include <dlfcn.h>
+          #define ADRENOTOOLS_DRIVER_CUSTOM 1
+          static inline void* adrenotools_open_libvulkan(int flags, int driver_type, void* a3, const char* hook_dir, const char* custom_lib_dir, const char* custom_lib_name, void* a7, void* a8) {
+            (void)flags;(void)driver_type;(void)a3;(void)hook_dir;(void)custom_lib_dir;(void)custom_lib_name;(void)a7;(void)a8;
+            return dlopen("libvulkan.so", RTLD_NOW | RTLD_NOLOAD);
+          }
+          ADREOF2
           
           mkdir -p "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial"
           cat > "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial/CMakeLists.txt" << 'EOF'
