@@ -830,6 +830,13 @@ jobs:
             fi
           done
           
+          # Patch swapchain_macos.hpp: cast void* to const CAMetalLayer*
+          SWAPCHAIN="$APS3E_CPP/rpcs3/rpcs3/Emu/RSX/VK/vkutils/swapchain_macos.hpp"
+          if [ -f "$SWAPCHAIN" ]; then
+            perl -i -pe 's/(createInfo\.pLayer\s*=\s*)(GetCAMetalLayerFromMetalView)/\1(const CAMetalLayer *)\2/g' "$SWAPCHAIN"
+            echo "Patched swapchain_macos.hpp: added CAMetalLayer cast"
+          fi
+          
           # Patch libusb os.cmake
           if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
             sed -i '' 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
@@ -1157,9 +1164,12 @@ jobs:
           # Apply __API_UNAVAILABLE only to rpcs3_emu (not ps3dream_native which has .mm files)
           target_compile_options(rpcs3_emu PRIVATE "-D__API_UNAVAILABLE(...)=")
           
-          # Ensure rpcs3_emu can find Vulkan headers and VMA
+          # Ensure rpcs3_emu can find Vulkan headers, VMA, and MoltenVK headers
           if(EXISTS "${REPO_ROOT}/MoltenVK-build/vulkan_headers")
             target_include_directories(rpcs3_emu PRIVATE "${REPO_ROOT}/MoltenVK-build/vulkan_headers")
+          endif()
+          if(EXISTS "${REPO_ROOT}/MoltenVK-build/Package/Headers")
+            target_include_directories(rpcs3_emu PRIVATE "${REPO_ROOT}/MoltenVK-build/Package/Headers")
           endif()
           if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include")
             target_include_directories(rpcs3_emu PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include")
@@ -1206,6 +1216,7 @@ jobs:
             ${REPO_ROOT}/Ps3Dream
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include
             ${REPO_ROOT}/MoltenVK-build/vulkan_headers
+            ${REPO_ROOT}/MoltenVK-build/Package/Headers
           )
           
           # Many 3rdparty libs are nested git submodules where the real include root
