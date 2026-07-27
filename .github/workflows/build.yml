@@ -51,21 +51,9 @@ jobs:
             echo "Vulkan headers found in MoltenVK tar"
           fi
           
-          # Ensure MoltenVK/mvk_vulkan.h is findable
-          # Create MoltenVK/ symlinks if headers exist but not under MoltenVK/ subdir
-          for hdr_dir in MoltenVK-build/Package/Headers MoltenVK-build/Headers; do
-            if [ -d "$hdr_dir" ] && [ ! -f "$hdr_dir/MoltenVK/mvk_vulkan.h" ]; then
-              echo "Creating MoltenVK/ symlink in $hdr_dir"
-              mkdir -p "$hdr_dir/MoltenVK"
-              for f in "$hdr_dir"/*.h "$hdr_dir"/mvk_*; do
-                [ -f "$f" ] && ln -sf "$(realpath "$f")" "$hdr_dir/MoltenVK/$(basename "$f")"
-              done
-            fi
-          done
-          # If no Headers dir at all, create a stub mvk_vulkan.h
-          if ! find MoltenVK-build -name "mvk_vulkan.h" -print -quit 2>/dev/null | grep -q .; then
-            echo "mvk_vulkan.h not found anywhere, creating stub"
-            mkdir -p MoltenVK-build/stub_headers/MoltenVK
+          # Always create MoltenVK/mvk_vulkan.h stub as fallback
+          mkdir -p MoltenVK-build/stub_headers/MoltenVK
+          if [ ! -f MoltenVK-build/Package/Headers/MoltenVK/mvk_vulkan.h ]; then
             printf '#pragma once\n#include <vulkan/vulkan.h>\n' > MoltenVK-build/stub_headers/MoltenVK/mvk_vulkan.h
           fi
 
@@ -1141,7 +1129,7 @@ jobs:
           set(CMAKE_OSX_DEPLOYMENT_TARGET 17.0)
           set(CMAKE_OSX_ARCHITECTURES "arm64")
           
-          add_definitions(-DENABLE_JIT=1 -DARCH_ARM64=1 -DUNIX_POSIX=1 -D__APPLE__=1 -DAPPLE=1 -DZLIB_CONST=1 -DSOUNDTOUCH_NO_EXCEPTIONS)
+          add_definitions(-DENABLE_JIT=1 -DARCH_ARM64=1 -DUNIX_POSIX=1 -D__APPLE__=1 -DAPPLE=1 -DZLIB_CONST=1 -DSOUNDTOUCH_NO_EXCEPTIONS -DVK_USE_PLATFORM_METAL_EXT=1 -DVK_USE_PLATFORM_IOSURFACE_EXT=1)
           add_compile_options(-march=armv8-a -stdlib=libc++)
           add_compile_options(-Wno-multichar -Wno-ignored-pragmas -Wno-attributes -Wno-missing-field-initializers -Wno-sign-compare -Wno-unused-parameter -Wno-availability -Wno-deprecated-declarations -Wno-unguarded-availability-new -Wno-error=return-type -Wno-error=old-style-cast -Wno-error=sign-compare -Wno-error=reorder -Wno-error=overloaded-virtual -Wno-error=missing-noreturn -Wno-error=implicit-fallthrough -Wno-error=incompatible-pointer-types-discards-qualifiers -Wno-error=deprecated-declarations -Wno-error=non-pod-varargs -Wno-error=bitwise-instead-of-logical -Wno-error=deprecated-copy -Wno-error=tautological-compare -Wno-error=implicit-function-declaration -Wno-error=return-type-c-linkage -Wno-error=c++11-narrowing -Wno-error=uninitialized -Wno-error=register -Wno-error=microsoft-anon-tag -Wno-error=overloaded-virtual)
           
@@ -1186,18 +1174,12 @@ jobs:
           target_compile_options(rpcs3_emu PRIVATE "-D__API_UNAVAILABLE(...)=")
           
           # Ensure rpcs3_emu can find Vulkan headers, VMA, and MoltenVK headers
-          if(EXISTS "${REPO_ROOT}/MoltenVK-build/vulkan_headers")
-            target_include_directories(rpcs3_emu PRIVATE "${REPO_ROOT}/MoltenVK-build/vulkan_headers")
-          endif()
-          if(EXISTS "${REPO_ROOT}/MoltenVK-build/Package/Headers")
-            target_include_directories(rpcs3_emu PRIVATE "${REPO_ROOT}/MoltenVK-build/Package/Headers")
-          endif()
-          if(EXISTS "${REPO_ROOT}/MoltenVK-build/stub_headers")
-            target_include_directories(rpcs3_emu PRIVATE "${REPO_ROOT}/MoltenVK-build/stub_headers")
-          endif()
-          if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include")
-            target_include_directories(rpcs3_emu PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include")
-          endif()
+          target_include_directories(rpcs3_emu PRIVATE
+            "${REPO_ROOT}/MoltenVK-build/vulkan_headers"
+            "${REPO_ROOT}/MoltenVK-build/Package/Headers"
+            "${REPO_ROOT}/MoltenVK-build/stub_headers"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include"
+          )
           
           # Ps3Dream native library (Objective-C++ bridge + platform + JIT + MVK)
           add_library(ps3dream_native STATIC
