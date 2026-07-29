@@ -370,30 +370,10 @@ public:
 
 class android_save_dialog:public SaveDialogBase{
 public:
-    s32 ShowSaveDataList(std::vector<SaveDataEntry>& save_entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) override
+    s32 ShowSaveDataList(const std::string& base_dir, std::vector<SaveDataEntry>& save_entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) override
     {
         LOGI("ShowSaveDataList stub called");
         return -2;
-    }
-
-        // Fall back to front-end GUI
-        /*cellSaveData.notice("ShowSaveDataList(): Using fallback GUI");
-        atomic_t<s32> selection = 0;
-
-        input::SetIntercepted(true);
-
-        Emu.BlockingCallFromMainThread([&]()
-                                       {
-                                           save_data_list_dialog sdid(save_entries, focused, op, listSet);
-                                           sdid.exec();
-                                           selection = sdid.GetSelection();
-                                       });
-
-        input::SetIntercepted(false);
-
-        if (use_end) sysutil_send_system_cmd(CELL_SYSUTIL_DRAWING_END, 0);
-
-        return selection.load();*/
     }
     ~android_save_dialog(){}
 };

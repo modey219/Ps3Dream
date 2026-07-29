@@ -184,7 +184,7 @@ static jobject j_meta_info_from_iso(JNIEnv* env,jobject self,jint fd,jstring jis
         env->SetObjectField(meta_info,fid_MetaInfo_icon,icon_array);
     }
 
-    env->SetBooleanField(meta_info,fid_MetaInfo_decrypt,ae::allow_eboot_decrypt(fs::file(*iso,":PS3_GAME/USRDIR/EBOOT.BIN")));
+    env->SetBooleanField(meta_info,fid_MetaInfo_decrypt,false);
 
     return meta_info;
 }

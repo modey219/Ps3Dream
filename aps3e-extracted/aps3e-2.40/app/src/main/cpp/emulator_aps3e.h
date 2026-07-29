@@ -12,6 +12,9 @@ class iso_fs {
 public:
     static std::unique_ptr<iso_fs> from_fd(int fd) { (void)fd; return nullptr; }
     bool load() { return false; }
+    bool exists(const std::string& path) const { (void)path; return false; }
+    std::vector<uint8_t> get_data_tiny(const std::string& path) const { (void)path; return {}; }
+    operator fs::file() const { return fs::file(); }
 };
 
 namespace ae{
