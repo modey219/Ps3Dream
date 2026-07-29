@@ -142,6 +142,7 @@ public:
     }
 
     void take_screenshot(std::vector<u8>&& data, u32 w, u32 h, bool is_bgra) override {}
+    void update_title(double fps) override {}
 };
 
 // ==================== iOS Virtual Pad Handler ====================
@@ -158,37 +159,29 @@ public:
 
     void Key(u32 code, bool pressed, u16 value = 255) {
         std::lock_guard lock(pad_mutex);
-        for (auto& pad : m_pads) {
-            for (auto& btn : pad.m_buttons) {
+        for (auto& binding : m_bindings) {
+            for (auto& btn : binding.pad->m_buttons) {
                 if (btn.m_outKeyCode == code) {
                     btn.m_pressed = pressed;
                     btn.m_value = pressed ? value : 0;
-                }
-            }
-            for (auto& stick : pad.m_sticks) {
-                if (stick.m_outKeyCode == code) {
-                    stick.m_value = pressed ? value : 0;
                 }
             }
         }
     }
 
     mutable std::mutex pad_mutex;
-    std::vector<Pad> m_pads;
 };
 
 // ==================== iOS Music Handler ====================
 class ios_music_handler : public music_handler_base {
-    CellMusicPBStatus m_local_state = CELL_MUSIC_PB_STATUS_STOP;
 public:
-    void stop() override { m_local_state = CELL_MUSIC_PB_STATUS_STOP; }
-    void pause() override { m_local_state = CELL_MUSIC_PB_STATUS_PAUSE; }
-    void play(const std::string& path) { m_local_state = CELL_MUSIC_PB_STATUS_PLAY; }
-    void fast_forward(const std::string& path) { m_local_state = CELL_MUSIC_PB_STATUS_FASTFORWARD; }
-    void fast_reverse(const std::string& path) { m_local_state = CELL_MUSIC_PB_STATUS_FASTREVERSE; }
+    void stop() override { set_state(0x101); }           // CELL_MUSIC_PB_STATUS_STOP
+    void pause() override { set_state(0x102); }          // CELL_MUSIC_PB_STATUS_PAUSE
+    void play(const std::string& path, bool automatic) override { set_state(0x100, automatic); }  // CELL_MUSIC_PB_STATUS_PLAY
+    void fast_forward(const std::string& path) override { set_state(0x104); }    // CELL_MUSIC_PB_STATUS_FASTFORWARD
+    void fast_reverse(const std::string& path) override { set_state(0x105); }    // CELL_MUSIC_PB_STATUS_FASTREVERSE
     void set_volume(f32 volume) override {}
     f32 get_volume() const override { return 0; }
-    CellMusicPBStatus get_state() const { return m_local_state; }
 };
 
 // ==================== Dialog Stubs ====================
@@ -196,10 +189,10 @@ public:
 
 class ios_save_dialog : public SaveDialogBase {
 public:
-    s32 ShowSaveDataList(std::vector<SaveDataEntry>& entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) {
+    s32 ShowSaveDataList(const std::string& base_dir, std::vector<SaveDataEntry>& entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) override {
         const bool use_end = sysutil_send_system_cmd(CELL_SYSUTIL_DRAWING_BEGIN, 0) >= 0;
         if (auto manager = g_fxo->try_get<rsx::overlays::display_manager>()) {
-            const s32 result = manager->create<rsx::overlays::save_dialog>()->show(entries, focused, op, listSet, enable_overlay, false);
+            const s32 result = manager->create<rsx::overlays::save_dialog>()->show(base_dir, entries, focused, op, listSet, enable_overlay);
             if (result != rsx::overlays::user_interface::selection_code::error) {
                 if (use_end) sysutil_send_system_cmd(CELL_SYSUTIL_DRAWING_END, 0);
                 return result;
