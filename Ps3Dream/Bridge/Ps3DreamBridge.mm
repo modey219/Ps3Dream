@@ -136,9 +136,9 @@ public:
         return vp.can_consume_frame();
     }
 
-    void present_frame(std::vector<u8>& data, u32 pitch, u32 width, u32 height, bool is_bgra) const override {
+    void present_frame(std::vector<u8>&& data, u32 pitch, u32 width, u32 height, bool is_bgra) const override {
         utils::video_provider& vp = g_fxo->get<utils::video_provider>();
-        vp.present_frame(data, pitch, width, height, is_bgra);
+        vp.present_frame(std::move(data), pitch, width, height, is_bgra);
     }
 
     void take_screenshot(std::vector<u8>&& data, u32 w, u32 h, bool is_bgra) override {}
@@ -158,7 +158,7 @@ public:
 
     void Key(u32 code, bool pressed, u16 value = 255) {
         std::lock_guard lock(pad_mutex);
-        for (auto& pad : m_pads_internal) {
+        for (auto& pad : m_pads) {
             for (auto& btn : pad.m_buttons) {
                 if (btn.m_outKeyCode == code) {
                     btn.m_pressed = pressed;
@@ -174,18 +174,21 @@ public:
     }
 
     mutable std::mutex pad_mutex;
+    std::vector<Pad> m_pads;
 };
 
 // ==================== iOS Music Handler ====================
 class ios_music_handler : public music_handler_base {
+    CellMusicPBStatus m_local_state = CELL_MUSIC_PB_STATUS_STOP;
 public:
-    void stop() override { m_state = CELL_MUSIC_PB_STATUS_STOP; }
-    void pause() override { m_state = CELL_MUSIC_PB_STATUS_PAUSE; }
-    void play(const std::string& path) override { m_state = CELL_MUSIC_PB_STATUS_PLAY; }
-    void fast_forward(const std::string& path) override { m_state = CELL_MUSIC_PB_STATUS_FASTFORWARD; }
-    void fast_reverse(const std::string& path) override { m_state = CELL_MUSIC_PB_STATUS_FASTREVERSE; }
+    void stop() override { m_local_state = CELL_MUSIC_PB_STATUS_STOP; }
+    void pause() override { m_local_state = CELL_MUSIC_PB_STATUS_PAUSE; }
+    void play(const std::string& path) { m_local_state = CELL_MUSIC_PB_STATUS_PLAY; }
+    void fast_forward(const std::string& path) { m_local_state = CELL_MUSIC_PB_STATUS_FASTFORWARD; }
+    void fast_reverse(const std::string& path) { m_local_state = CELL_MUSIC_PB_STATUS_FASTREVERSE; }
     void set_volume(f32 volume) override {}
     f32 get_volume() const override { return 0; }
+    CellMusicPBStatus get_state() const { return m_local_state; }
 };
 
 // ==================== Dialog Stubs ====================
@@ -193,10 +196,10 @@ public:
 
 class ios_save_dialog : public SaveDialogBase {
 public:
-    s32 ShowSaveDataList(std::vector<SaveDataEntry>& entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) override {
+    s32 ShowSaveDataList(std::vector<SaveDataEntry>& entries, s32 focused, u32 op, vm::ptr<CellSaveDataListSet> listSet, bool enable_overlay) {
         const bool use_end = sysutil_send_system_cmd(CELL_SYSUTIL_DRAWING_BEGIN, 0) >= 0;
         if (auto manager = g_fxo->try_get<rsx::overlays::display_manager>()) {
-            const s32 result = manager->create<rsx::overlays::save_dialog>()->show(entries, focused, op, listSet, enable_overlay);
+            const s32 result = manager->create<rsx::overlays::save_dialog>()->show(entries, focused, op, listSet, enable_overlay, false);
             if (result != rsx::overlays::user_interface::selection_code::error) {
                 if (use_end) sysutil_send_system_cmd(CELL_SYSUTIL_DRAWING_END, 0);
                 return result;
@@ -285,20 +288,11 @@ static EmuCallbacks create_ios_emu_cb() {
     };
 
     cb.get_audio = []() -> std::shared_ptr<AudioBackend> {
-        auto result = std::make_shared<NullAudioBackend>();
-        switch (g_cfg.audio.renderer.get()) {
-            case audio_renderer::null: result = std::make_shared<NullAudioBackend>(); break;
-            case audio_renderer::cubeb: result = std::make_shared<CubebBackend>(); break;
-            default: break;
-        }
-        if (!result->Initialized()) {
-            result = std::make_shared<NullAudioBackend>();
-        }
-        return result;
+        return std::make_shared<NullAudioBackend>();
     };
 
     cb.get_audio_enumerator = [](u64 renderer) -> std::shared_ptr<audio_device_enumerator> {
-        return std::make_shared<null_enumerator>();
+        return nullptr;
     };
 
     cb.get_image_info = [](const std::string&, std::string&, s32&, s32&, s32&) -> bool { return false; };
@@ -367,7 +361,7 @@ static EmuCallbacks create_ios_emu_cb() {
         return std::string(args ? args : "");
     };
 
-    cb.play_sound = [](const std::string&) {};
+    cb.play_sound = [](const std::string&, std::optional<float>) {};
     cb.add_breakpoint = [](u32) {};
 
     return cb;
@@ -420,7 +414,7 @@ static void ios_main_thr() {
     if (g_boot_type == 1) {
         result = Emu.BootGame(g_boot_path, {}, true);
     } else if (g_boot_fd >= 0) {
-        result = Emu.BootISO(":PS3_GAME/USRDIR/EBOOT.BIN", {}, g_boot_fd);
+        result = Emu.BootGame(g_boot_path, {}, true);
     } else if (!g_boot_uri.empty()) {
         result = Emu.BootGame(g_boot_uri, {}, true);
     }
@@ -613,7 +607,7 @@ const char* ps3dream_get_firmware_version(void) {
 }
 
 const char* ps3dream_get_version(void) {
-    return rpcs3::version.to_string().c_str();
+    return "Ps3Dream v1.0 (RPCS3 based)";
 }
 
 void ps3dream_set_log_callback(Ps3DreamLogCallback callback) { g_log_callback = callback; }
