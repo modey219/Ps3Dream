@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "aps3e_rp3_impl.h"
+#include <algorithm>
 
 LOG_CHANNEL(aps3e_log);
 LOG_CHANNEL(sys_log, "SYS");
@@ -149,7 +150,6 @@ extern VkPhysicalDeviceLimits get_physical_device_limits(){
 
         VkInstance inst;
         if (vkCreateInstance(&inst_create_info, nullptr, &inst)!= VK_SUCCESS) {
-            __android_log_print(ANDROID_LOG_FATAL, LOG_TAG,"%s : %d",__func__,__LINE__);
             aps3e_log.fatal("%s : %d",__func__,__LINE__);
         }
 
@@ -742,13 +742,21 @@ void AndroidVirtualPadHandler::Key(const u32 code, bool pressed, u16 value)
             return actual_value;
         };
 
+        const auto key_in_combos = [&](const std::vector<std::set<u32>>& combos) -> bool
+        {
+            return std::any_of(combos.begin(), combos.end(), [&](const std::set<u32>& combo)
+            {
+                return combo.size() == 1 && *combo.begin() == code;
+            });
+        };
+
         // Find out if special buttons are pressed (introduced by RPCS3).
         // Activate the buttons here if possible since keys don't auto-repeat. This ensures that they are already pressed in the following loop.
         if (pad.m_pressure_intensity_button_index >= 0)
         {
             Button& pressure_intensity_button = pad.m_buttons[pad.m_pressure_intensity_button_index];
 
-            if (pressure_intensity_button.m_key_codes.contains(code))
+            if (key_in_combos(pressure_intensity_button.m_key_combos))
             {
                 const u16 actual_value = register_new_button_value(pressure_intensity_button.m_pressed_keys);
 
@@ -769,7 +777,7 @@ void AndroidVirtualPadHandler::Key(const u32 code, bool pressed, u16 value)
         {
             Button& analog_limiter_button = pad.m_buttons[pad.m_analog_limiter_button_index];
 
-            if (analog_limiter_button.m_key_codes.contains(code))
+            if (key_in_combos(analog_limiter_button.m_key_combos))
             {
                 const u16 actual_value = register_new_button_value(analog_limiter_button.m_pressed_keys);
 
@@ -800,7 +808,7 @@ void AndroidVirtualPadHandler::Key(const u32 code, bool pressed, u16 value)
 
             bool update_button = true;
 
-            if (!button.m_key_codes.contains(code))
+            if (!key_in_combos(button.m_key_combos))
             {
                 // Handle pressure changes anyway
                 update_button = adjust_pressure_changed;
@@ -855,8 +863,8 @@ void AndroidVirtualPadHandler::Key(const u32 code, bool pressed, u16 value)
 
             const bool is_left_stick = i < 2;
 
-            const bool is_max = stick.m_key_codes_max.contains(code);
-            const bool is_min = stick.m_key_codes_min.contains(code);
+            const bool is_max = key_in_combos(stick.m_key_combos_max);
+            const bool is_min = key_in_combos(stick.m_key_combos_min);
 
             if (!is_max && !is_min)
             {
@@ -1470,7 +1478,16 @@ std::string keyboard_pad_handler::GetKeyName(const u32& keyCode)
 std::set<u32> AndroidVirtualPadHandler::GetKeyCodes(const cfg::string& cfg_string)
 {
     std::set<u32> key_codes;
-    for (const std::string& key_name : cfg_pad::get_buttons(cfg_string))
+    std::string s = cfg_string.to_string();
+    size_t pos = 0;
+    std::vector<std::string> parts;
+    while ((pos = s.find(", ")) != std::string::npos)
+    {
+        if (!s.substr(0, pos).empty()) parts.push_back(s.substr(0, pos));
+        s.erase(0, pos + 2);
+    }
+    if (!s.empty()) parts.push_back(s);
+    for (const std::string& key_name : parts)
     {
         //if (u32 code = GetKeyCode(QString::fromStdString(key_name)); code != Qt::NoButton)
         if (u32 code = mouse_list_r.at(key_name); code)
@@ -1623,24 +1640,16 @@ bool AndroidVirtualPadHandler::bindPadToDevice(std::shared_ptr<Pad> pad)
     m_pressure_intensity_toggle_mode = cfg->pressure_intensity_toggle_mode.get();
     m_pressure_intensity_deadzone = cfg->pressure_intensity_deadzone.get();
 
-    const auto find_keys = [this](const cfg::string& name)
-    {
-        std::set<u32> keys = FindKeyCodes<u32, u32>(mouse_list, name, false);
-        for (const u32& key : GetKeyCodes(name)) keys.insert(key);
-
-        /*if (!keys.empty())
+        const auto find_keys = [this](const cfg::string& name) -> std::vector<std::set<u32>>
         {
-            if (!m_mouse_move_used && (keys.contains(mouse::move_left) || keys.contains(mouse::move_right) || keys.contains(mouse::move_up) || keys.contains(mouse::move_down)))
+            std::vector<std::set<u32>> combos;
+            std::set<u32> keys = GetKeyCodes(name);
+            for (u32 key : keys)
             {
-                m_mouse_move_used = true;
+                combos.push_back({key});
             }
-            else if (!m_mouse_wheel_used && (keys.contains(mouse::wheel_left) || keys.contains(mouse::wheel_right) || keys.contains(mouse::wheel_up) || keys.contains(mouse::wheel_down)))
-            {
-                m_mouse_wheel_used = true;
-            }
-        }*/
-        return keys;
-    };
+            return combos;
+        };
 
     u32 pclass_profile = 0x0;
 
@@ -1715,8 +1724,8 @@ bool AndroidVirtualPadHandler::bindPadToDevice(std::shared_ptr<Pad> pad)
     pad->m_sensors[2] = AnalogSensor(CELL_PAD_BTN_OFFSET_SENSOR_Z, 0, 0, 0, DEFAULT_MOTION_Z);
     pad->m_sensors[3] = AnalogSensor(CELL_PAD_BTN_OFFSET_SENSOR_G, 0, 0, 0, DEFAULT_MOTION_G);
 
-    pad->m_vibrateMotors[0] = VibrateMotor(true, 0);
-    pad->m_vibrateMotors[1] = VibrateMotor(false, 0);
+    pad->m_vibrate_motors[0] = VibrateMotor(true);
+    pad->m_vibrate_motors[1] = VibrateMotor(false);
 
     m_bindings.emplace_back(pad, nullptr, nullptr);
     m_pads_internal.push_back(*pad);
@@ -2102,8 +2111,8 @@ void pad_thread::SetRumble(const u32 pad, u8 large_motor, bool small_motor)
     if (pad >= m_pads.size())
         return;
 
-    m_pads[pad]->m_vibrateMotors[0].m_value = large_motor;
-    m_pads[pad]->m_vibrateMotors[1].m_value = small_motor ? 255 : 0;
+    m_pads[pad]->m_vibrate_motors[0].m_value = large_motor;
+    m_pads[pad]->m_vibrate_motors[1].m_value = small_motor ? 255 : 0;
 }
 
 void pad_thread::SetIntercepted(bool intercepted)
