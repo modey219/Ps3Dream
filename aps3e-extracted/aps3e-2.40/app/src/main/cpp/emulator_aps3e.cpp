@@ -995,7 +995,7 @@ static jobjectArray j_get_vulkan_physical_dev_list(JNIEnv* env,jobject self){
 
         VkInstance inst;
         if (vkCreateInstance(&inst_create_info, nullptr, &inst)!= VK_SUCCESS) {
-            __android_log_print(ANDROID_LOG_FATAL, LOG_TAG,"%s : %d",__func__,__LINE__);
+            LOGE("%s : %d",__func__,__LINE__);
         }
 
         // 获取物理设备数量

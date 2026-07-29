@@ -15,13 +15,11 @@
 #include <EGL/eglext.h>
 #endif
 
-#ifdef __APPLE__
-typedef void* ANativeWindow;
-#endif
-
 #include <vector>
 
+#ifndef __APPLE__
 #define VK_USE_PLATFORM_ANDROID_KHR
+#endif
 #include <vulkan/vulkan.h>
 
 #include <thread>

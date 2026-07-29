@@ -19,7 +19,6 @@
 #endif
 
 #ifdef __APPLE__
-typedef void* ANativeWindow;
 typedef void* EGLDisplay;
 typedef void* EGLConfig;
 typedef void* EGLContext;
@@ -28,7 +27,9 @@ typedef void* EGLSurface;
 
 #include <vector>
 
+#ifndef __APPLE__
 #define VK_USE_PLATFORM_ANDROID_KHR
+#endif
 #include <vulkan/vulkan.h>
 
 #include <thread>
@@ -341,7 +342,7 @@ public:
     draw_context_t make_context(){PR;return nullptr;}
     void set_current(draw_context_t ctx){PR;}
     void flip(draw_context_t ctx, bool skip_frame = false){/*PR;*/}
-    void update_title(const std::string& title) override{/*PR;*/}
+    void update_title(double /*fps*/) override{/*PR;*/}
     int client_width(){/*PR;*/return this->width;}
     int client_height(){/*PR;*/return this->height;}
     f64 client_display_rate(){PR;return 60.0;}
