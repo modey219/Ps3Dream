@@ -3,17 +3,27 @@
 #include <jni.h>
 #include <assert.h>
 #include <string.h>
+
+#ifndef __APPLE__
 #include <android/log.h>
-#include <vector>
 #include <android/native_window_jni.h>
-
-#define VK_USE_PLATFORM_ANDROID_KHR
-#include <vulkan/vulkan.h>
-
 #include <linux/prctl.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/resource.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#endif
+
+#ifdef __APPLE__
+typedef void* ANativeWindow;
+#endif
+
+#include <vector>
+
+#define VK_USE_PLATFORM_ANDROID_KHR
+#include <vulkan/vulkan.h>
+
 #include <thread>
 #include <string_view>
 
@@ -24,9 +34,6 @@
 #include <string>
 
 #include <stb_truetype.h>
-
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 
 
 #pragma clang diagnostic push

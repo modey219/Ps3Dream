@@ -6,17 +6,31 @@
 #include <jni.h>
 #include <assert.h>
 #include <string.h>
+
+#ifndef __APPLE__
 #include <android/log.h>
-#include <vector>
 #include <android/native_window_jni.h>
-
-#define VK_USE_PLATFORM_ANDROID_KHR
-#include <vulkan/vulkan.h>
-
 #include <linux/prctl.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/resource.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#endif
+
+#ifdef __APPLE__
+typedef void* ANativeWindow;
+typedef void* EGLDisplay;
+typedef void* EGLConfig;
+typedef void* EGLContext;
+typedef void* EGLSurface;
+#endif
+
+#include <vector>
+
+#define VK_USE_PLATFORM_ANDROID_KHR
+#include <vulkan/vulkan.h>
+
 #include <thread>
 #include <string_view>
 
@@ -27,9 +41,6 @@
 #include <string>
 
 #include <stb_truetype.h>
-
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 
 
 #pragma clang diagnostic push
@@ -330,6 +341,7 @@ public:
     draw_context_t make_context(){PR;return nullptr;}
     void set_current(draw_context_t ctx){PR;}
     void flip(draw_context_t ctx, bool skip_frame = false){/*PR;*/}
+    void update_title(const std::string& title) override{/*PR;*/}
     int client_width(){/*PR;*/return this->width;}
     int client_height(){/*PR;*/return this->height;}
     f64 client_display_rate(){PR;return 60.0;}
@@ -361,7 +373,7 @@ public:
 
     void stop(){PR;}
     void pause(){PR;}
-    void play(const std::string& path){PR;}
+    void play(const std::string& path, bool automatic){PR;}
     void fast_forward(const std::string& path){PR;}
     void fast_reverse(const std::string& path){PR;}
     void set_volume(f32 volume){PR;}

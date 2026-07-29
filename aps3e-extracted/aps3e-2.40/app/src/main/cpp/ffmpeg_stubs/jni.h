@@ -9,6 +9,7 @@
 #define JNI_FALSE 0
 #define JNI_TRUE 1
 #define JNI_VERSION_1_6 0x00010006
+#define JNI_EDETACHED (-2)
 
 typedef int32_t jint;
 typedef int64_t jlong;

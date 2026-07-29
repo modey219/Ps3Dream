@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: WTFPL
+#ifndef __APPLE__
 #include <android/log.h>
+#endif
 #include <jni.h>
 #include <filesystem>
 #include <fstream>
@@ -13,17 +15,23 @@
 #include "Loader/TROPUSR.h"
 
 
+#ifndef __APPLE__
 #define LOG_TAG "aps3e_native"
-
 #define LOGW(...) {      \
     __android_log_print(ANDROID_LOG_ERROR, LOG_TAG,"%s : %d",__func__,__LINE__);\
 	__android_log_print(ANDROID_LOG_ERROR, LOG_TAG,__VA_ARGS__);\
 }
-
 #define LOGE(...) {      \
     __android_log_print(ANDROID_LOG_ERROR, LOG_TAG,"%s : %d",__func__,__LINE__);\
 	__android_log_print(ANDROID_LOG_ERROR, LOG_TAG,__VA_ARGS__);\
 }
+#else
+#define LOGW(...) {}
+#define LOGE(...) {}
+#endif
+
+// Global iso_fs instance for iOS compat (Emu.GetIsoFs removed from rpcs3)
+std::unique_ptr<iso_fs> g_iso_fs = std::make_unique<iso_fs>();
 
 static jboolean j_install_firmware(JNIEnv* env,jobject self,jint pup_fd){
     //jboolean is_copy=false;

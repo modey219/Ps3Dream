@@ -7,14 +7,18 @@
 #include <sstream>
 #include <algorithm>
 #include <map>
+#ifndef __APPLE__
 #include <android/log.h>
+#endif
 
+#ifdef __APPLE__
+#define LOGW(...) {}
+#else
 #define LOG_TAG "cpuinfo"
-
 #define LOGW(...) {      \
     __android_log_print(ANDROID_LOG_WARN, LOG_TAG,"%s : %d",__func__,__LINE__);\
-	__android_log_print(ANDROID_LOG_WARN, LOG_TAG,__VA_ARGS__);\
 }
+#endif
 
 std::vector<core_info_t> cpu_get_core_info(){
     std::ifstream cpuinfo("/proc/cpuinfo");

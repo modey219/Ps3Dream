@@ -177,56 +177,17 @@ extern bool vk_limit_max_vertex_output_components_le_64(){
 }
 
 extern bool cfg_vertex_buffer_upload_mode_use_buffer_view(){
-    static const bool r=[]{
-        switch(g_cfg.video.vertex_buffer_upload_mode){
-            case vertex_buffer_upload_mode::buffer_view:
-                return true;
-            case vertex_buffer_upload_mode::buffer:
-                return false;
-            case vertex_buffer_upload_mode::_auto:
-                return get_physical_device_limits().maxTexelBufferElements>=64*1024*1024;//>=64M
-        }
-    }();
-    return r;
+    return true;
 }
 
 extern const std::unordered_map<rsx::overlays::language_class,std::string>& cfg_font_files(){
 
     static const auto r=[]->std::unordered_map<rsx::overlays::language_class,std::string>{
-        case_lab:
-        switch(g_cfg.misc.font_file_selection) {
-            case font_file_selection::from_firmware:
-                return {
-                        {rsx::overlays::language_class::default_, "SCE-PS3-VR-R-LATIN.TTF"},
-                        {rsx::overlays::language_class::cjk_base, "SCE-PS3-SR-R-JPN.TTF"},
-                        {rsx::overlays::language_class::hangul,   "SCE-PS3-YG-R-KOR.TTF"}
-                };
-
-            case font_file_selection::from_os:
-                return {
-                        {rsx::overlays::language_class::default_, "/system/fonts/Roboto-Regular.ttf"},
-                        {rsx::overlays::language_class::cjk_base, "/system/fonts/NotoSansCJK-Regular.ttc"},
-                        {rsx::overlays::language_class::hangul,   "/system/fonts/NotoSansCJK-Regular.ttc"}
-                };
-            case font_file_selection::custom:
-                std::string custom_font_file_path = g_cfg.misc.custom_font_file_path.to_string();
-                if (!custom_font_file_path.empty() &&
-                    std::filesystem::exists(custom_font_file_path))
-                    return {
-                            {rsx::overlays::language_class::default_, custom_font_file_path},
-                            {rsx::overlays::language_class::cjk_base, custom_font_file_path},
-                            {rsx::overlays::language_class::hangul,   custom_font_file_path}
-                    };
-                else {
-                    //Android 15+
-                    g_cfg.misc.font_file_selection.set(
-                            atoi(getenv("APS3E_ANDROID_API_VERSION")) >= 35
-                            ? font_file_selection::from_firmware : font_file_selection::from_os);
-                    goto case_lab;
-                }
+        return {
+                {rsx::overlays::language_class::default_, "SCE-PS3-VR-R-LATIN.TTF"},
+                {rsx::overlays::language_class::cjk_base, "SCE-PS3-SR-R-JPN.TTF"},
+                {rsx::overlays::language_class::hangul,   "SCE-PS3-YG-R-KOR.TTF"}
         };
-
-        return {};
     }();
 
     return r;
@@ -242,14 +203,14 @@ android_camera_handler::android_camera_handler(JavaVM *vm) : camera_handler_base
     if (!jvm_)
     {
         aps3e_log.error("No Java VM available");
-        m_state = camera_handler_state::closed;
-        return;
+            set_state(camera_handler_state::closed);
+            return;
     }
 
     if (!init_java_camera())
     {
         aps3e_log.error("Failed to initialize Java camera");
-        m_state = camera_handler_state::closed;
+        set_state(camera_handler_state::closed);
     }
 }
 
@@ -356,16 +317,16 @@ void android_camera_handler::open_camera()
     if (!j_camera_instance_)
     {
         aps3e_log.error("Java camera not initialized");
-        m_state = camera_handler_state::closed;
-        return;
+            set_state(camera_handler_state::closed);
+            return;
     }
 
     JNIEnv* env = get_env(jvm_);
     if (!env)
     {
         aps3e_log.error("Failed to get JNI environment");
-        m_state = camera_handler_state::closed;
-        return;
+            set_state(camera_handler_state::closed);
+            return;
     }
 
     // Set resolution and format before opening
@@ -389,7 +350,7 @@ void android_camera_handler::open_camera()
         env->CallVoidMethod(j_camera_instance_, mth_open_);
     }
 
-    m_state = camera_handler_state::open;
+    set_state(camera_handler_state::open);
     aps3e_log.notice("Camera opened successfully");
 }
 
@@ -399,18 +360,18 @@ void android_camera_handler::close_camera()
 
     if (!j_camera_instance_)
     {
-        m_state = camera_handler_state::closed;
-        return;
+            set_state(camera_handler_state::closed);
+            return;
     }
 
     JNIEnv* env = get_env(jvm_);
     if (!env)
     {
-        m_state = camera_handler_state::closed;
-        return;
+            set_state(camera_handler_state::closed);
+            return;
     }
 
-    if (mth_stop_ && m_state == camera_handler_state::running)
+    if (mth_stop_ && get_state() == camera_handler_state::running)
     {
         env->CallVoidMethod(j_camera_instance_, mth_stop_);
     }
@@ -420,7 +381,7 @@ void android_camera_handler::close_camera()
         env->CallVoidMethod(j_camera_instance_, mth_close_);
     }
 
-    m_state = camera_handler_state::closed;
+    set_state(camera_handler_state::closed);
     aps3e_log.notice("Camera closed");
 }
 
@@ -431,16 +392,16 @@ void android_camera_handler::start_camera()
     if (!j_camera_instance_)
     {
         aps3e_log.error("Java camera not initialized");
-        m_state = camera_handler_state::closed;
-        return;
+            set_state(camera_handler_state::closed);
+            return;
     }
 
     JNIEnv* env = get_env(jvm_);
     if (!env)
     {
         aps3e_log.error("Failed to get JNI environment");
-        m_state = camera_handler_state::closed;
-        return;
+            set_state(camera_handler_state::closed);
+            return;
     }
 
     if (mth_start_)
@@ -448,7 +409,7 @@ void android_camera_handler::start_camera()
         env->CallVoidMethod(j_camera_instance_, mth_start_);
     }
 
-    m_state = camera_handler_state::running;
+    set_state(camera_handler_state::running);
     aps3e_log.notice("Camera started");
 }
 
@@ -458,15 +419,15 @@ void android_camera_handler::stop_camera()
 
     if (!j_camera_instance_)
     {
-        m_state = camera_handler_state::closed;
-        return;
+            set_state(camera_handler_state::closed);
+            return;
     }
 
     JNIEnv* env = get_env(jvm_);
     if (!env)
     {
-        m_state = camera_handler_state::closed;
-        return;
+            set_state(camera_handler_state::closed);
+            return;
     }
 
     if (mth_stop_)
@@ -474,7 +435,7 @@ void android_camera_handler::stop_camera()
         env->CallVoidMethod(j_camera_instance_, mth_stop_);
     }
 
-    m_state = camera_handler_state::open;
+    set_state(camera_handler_state::open);
     aps3e_log.notice("Camera stopped");
 }
 
@@ -579,11 +540,11 @@ camera_handler_base::camera_handler_state android_camera_handler::get_image(
     if (!j_camera_instance_)
     {
         aps3e_log.error("Camera not initialized");
-        m_state = camera_handler_state::closed;
+        set_state(camera_handler_state::closed);
         return camera_handler_state::closed;
     }
 
-    const camera_handler_state current_state = m_state;
+    const camera_handler_state current_state = get_state();
 
     if (current_state == camera_handler_state::running)
     {

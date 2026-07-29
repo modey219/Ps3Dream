@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include <atomic>
+#include <optional>
 #include "aps3e_rp3_impl.h"
 #include "emulator.h"
 #include "emulator_aps3e.h"
@@ -283,7 +284,8 @@ namespace ae{
             bool result=true;
             if(pkgs[0][0]==':') {
                 for(const auto& pkg : pkgs){
-                    if(!ae::install_pkg(*Emu.GetIsoFs(),pkg)){
+                    extern std::unique_ptr<iso_fs> g_iso_fs;
+                    if(!ae::install_pkg(*g_iso_fs,pkg)){
                         result=false;
                     }
                 }
@@ -439,7 +441,7 @@ namespace ae{
             PRE("get_localized_u32string");
             return {}; };*/
 
-        callbacks.play_sound = [](const std::string&){
+        callbacks.play_sound = [](const std::string&, std::optional<float>){
             PRE("play_sound");
 
         };
@@ -457,7 +459,9 @@ namespace ae{
             static std::unique_ptr<logs::listener> log_file = logs::make_file_listener(std::string(getenv("APS3E_LOG_DIR"))+"/rp3_log.txt", 1024*1024*1024);
         }
 
+#ifndef __APPLE__
         prctl(PR_SET_TIMERSLACK, 1, 0, 0, 0);
+#endif
 
         // Initialize TSC freq (in case it isn't)
         static_cast<void>(utils::get_tsc_freq());
@@ -465,6 +469,7 @@ namespace ae{
         // Initialize thread pool finalizer (on first use)
         static_cast<void>(named_thread("", [](int) {}));
 
+#ifndef __APPLE__
         struct rlimit64 rlim;
         rlim.rlim_cur = 4096;
         rlim.rlim_max = 4096;
@@ -486,6 +491,7 @@ namespace ae{
         else{
             LOGW("RLIMIT_MEMLOCK: rlim_max 0x%x ,rlim_cur 0x%x",rlim.rlim_max,rlim.rlim_cur);
         }
+#endif
 
         /*if(prlimit64(0,RLIMIT_MEMLOCK,NULL,&rlim)==0){
             LOGW("prlimit64(RLIMIT_MEMLOCK): rlim_max 0x%x ,rlim_cur 0x%x",rlim.rlim_max,rlim.rlim_cur);
@@ -512,11 +518,10 @@ namespace ae{
             Emu.SetForceBoot(true);
 
             const char* config_path=getenv("APS3E_CUSTOM_CONFIG_YAML_PATH");
-            const cfg_mode config_mode = config_path?cfg_mode::custom:cfg_mode::global ;
+            const cfg_mode config_mode = cfg_mode::custom;
 
             aps3e_log.warning("iso_fd: %d",boot_game_fd);
-            const game_boot_result error =boot_type==BOOT_TYPE_WITH_PATH? Emu.BootGame(boot_game_path, game_id, true, config_mode, config_path?:"")
-                                                             :Emu.BootISO(":PS3_GAME/USRDIR/EBOOT.BIN",game_id,boot_game_fd,config_mode, config_path?:"");
+            const game_boot_result error =Emu.BootGame(boot_game_path, game_id, true, config_mode, config_path?:"");
             LOGW("game_boot_result %d",error);
             return error==game_boot_result::no_errors;
         }//);
@@ -526,8 +531,8 @@ namespace ae{
     //util
 
     bool install_firmware(int fd){
-        fs::file pup_f=fs::file::from_fd(fd);
-        if (!pup_f)
+        fs::file pup_f;
+        if (false)
         {
             //LOGE("Error opening PUP file %s (%s)", path);
             LOGE("Firmware installation failed: The selected firmware file couldn't be opened.");
@@ -722,15 +727,7 @@ namespace ae{
 
     }
     bool install_pkg(int pkg_fd){
-        std::deque<package_reader> readers;
-        readers.emplace_back(fs::file::from_fd(pkg_fd));
-
-        std::deque<std::string> bootable_paths;
-
-        package_install_result result = package_reader::extract_data(readers, bootable_paths);
-        LOGW("install_pkg %d %s %s",result.error,result.version.expected.c_str(),result.version.found.c_str());
-        return result.error == package_install_result::error_type::no_error;
-
+        return false;
     }
 
     bool allow_eboot_decrypt(const fs::file& eboot_file){
@@ -797,16 +794,7 @@ namespace ae{
         }
     };
     bool precompile_ppu_cache(const std::string& path,std::optional<int> fd) {
-
-        //setenv("APS3E_ENABLE_LOG","true",1);
-        ae::init();
-        EmuCallbacks cbs=Emu.GetCallbacks();
-
-        cbs.get_msg_dialog=[]()->std::shared_ptr<class MsgDialogBase>{
-            return std::make_shared<NotifyMsg>();
-        };
-        Emu.SetCallbacks(std::move(cbs));
-        return Emu.PrecompilePPUCache(path, fd);
+        return false;
     }
 
     std::pair<std::string,bool> vk_lib_info(){

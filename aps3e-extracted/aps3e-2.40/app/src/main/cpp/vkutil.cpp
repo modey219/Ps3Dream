@@ -6,11 +6,16 @@
  #include "vkutil.h"
  #include "glsl2spv.h"
 
+#ifndef __APPLE__
 #include <android/log.h>
 
 #define LOG_TAG "vkutil"
 #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
  #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#else
+#define LOGI(...)
+#define LOGE(...)
+#endif
 std::optional<VkInstance> vk_create_instance(const char * name) {
         VkApplicationInfo appinfo = {};
         appinfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;

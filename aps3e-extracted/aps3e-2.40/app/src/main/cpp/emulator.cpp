@@ -1,16 +1,22 @@
 // SPDX-License-Identifier: WTFPL
 
 #include "emulator.h"
+#ifndef __APPLE__
 #include <android/log.h>
+#endif
 #include <fstream>
 #include <jni.h>
 #include <thread>
 
+#ifdef __APPLE__
+#define LOGE(...) {}
+#else
 #define LOG_TAG "Emulator_Config"
 #define LOGE(...) {      \
     __android_log_print(ANDROID_LOG_ERROR, LOG_TAG,"%s : %d",__FILE__,__LINE__);\
 	__android_log_print(ANDROID_LOG_ERROR, LOG_TAG,__VA_ARGS__);\
 }
+#endif
 
 #define CFG_TYPE_TOML 0
 #define CFG_TYPE_YAML 1
