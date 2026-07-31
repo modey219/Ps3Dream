@@ -322,11 +322,19 @@ private:
 class android_gs_frame:public GSFrameBase
 {
 public:
+#ifdef __APPLE__
+    void*& wnd;
+#else
     ANativeWindow*& wnd;
+#endif
     int& width;
     int& height;
 
+#ifdef __APPLE__
+    android_gs_frame(void*& wnd,int& w,int& h):wnd(wnd),width(w),height(h){PR;
+#else
     android_gs_frame(ANativeWindow*& wnd,int& w,int& h):wnd(wnd),width(w),height(h){PR;
+#endif
         g_fxo->need<utils::video_provider>();
     }
     ~android_gs_frame(){PR;}

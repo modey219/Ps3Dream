@@ -57,7 +57,9 @@ VKFN(vkCmdSetViewport);
 VKFN(vkCmdUpdateBuffer);
 VKFN(vkCmdWaitEvents);
 VKFN(vkCmdWaitEvents2KHR);
+#ifndef __APPLE__
 VKFN(vkCreateAndroidSurfaceKHR);//  android
+#endif
 VKFN(vkCreateBuffer);
 VKFN(vkCreateBufferView);
 VKFN(vkCreateCommandPool);

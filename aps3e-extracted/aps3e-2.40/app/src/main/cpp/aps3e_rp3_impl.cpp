@@ -2106,13 +2106,13 @@ void pad_thread::Init()
     input::set_mouse_and_keyboard(m_handlers.contains(pad_handler::keyboard) ? input::active_mouse_and_keyboard::pad : input::active_mouse_and_keyboard::emulated);
 }
 
-void pad_thread::SetRumble(const u32 pad, u8 large_motor, bool small_motor)
+void pad_thread::SetRumble(u32 pad, u8 large_motor, u8 small_motor)
 {
     if (pad >= m_pads.size())
         return;
 
-    m_pads[pad]->m_vibrate_motors[0].m_value = large_motor;
-    m_pads[pad]->m_vibrate_motors[1].m_value = small_motor ? 255 : 0;
+    m_pads[pad]->m_vibrate_motors[0].value = large_motor;
+    m_pads[pad]->m_vibrate_motors[1].value = small_motor;
 }
 
 void pad_thread::SetIntercepted(bool intercepted)

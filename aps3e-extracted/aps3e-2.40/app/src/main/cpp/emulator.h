@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: WTFPL
 #pragma once
 
+#ifndef __APPLE__
 #include <android/native_window_jni.h>
+#endif
 #include <string>
 
 namespace ae{
@@ -14,7 +16,11 @@ namespace ae{
     extern int boot_game_fd;
     extern std::string boot_game_uri;
 
+#ifdef __APPLE__
+    extern void* window;
+#else
     extern ANativeWindow* window;
+#endif
     extern int window_width;
     extern int window_height;
 

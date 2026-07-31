@@ -17,7 +17,11 @@ namespace ae{
     std::string boot_game_path;
     int boot_game_fd;
 
+#ifdef __APPLE__
+    void* window;
+#else
     ANativeWindow* window;
+#endif
     int window_width;
     int window_height;
 

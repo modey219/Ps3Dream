@@ -393,6 +393,7 @@ static void j_change_surface(JNIEnv* env,jobject self,jint w,jint h){
 
 static void j_setup_surface(JNIEnv* env,jobject self,jobject surface){
 
+#ifndef __APPLE__
     if(ae::window){
         ANativeWindow_release(ae::window);
         ae::window=nullptr;}
@@ -401,6 +402,7 @@ static void j_setup_surface(JNIEnv* env,jobject self,jobject surface){
         ae::window_width=ANativeWindow_getWidth(ae::window);
         ae::window_height=ANativeWindow_getHeight(ae::window);
     }
+#endif
 }
 
 static void j_key_event(JNIEnv* env,jobject self,jint key_code,jboolean pressed,jint value){

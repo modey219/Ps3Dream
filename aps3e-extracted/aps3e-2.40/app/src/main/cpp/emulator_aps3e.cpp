@@ -5,7 +5,9 @@
 #include <jni.h>
 #include <filesystem>
 #include <fstream>
+#ifndef __APPLE__
 #define VK_USE_PLATFORM_ANDROID_KHR
+#endif
 #include <vulkan/vulkan.h>
 #include "emulator_aps3e.h"
 #include "cpuinfo.h"

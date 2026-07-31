@@ -6,7 +6,9 @@
 #ifndef APS3E_VKAPI_H
 #define APS3E_VKAPI_H
 
+#ifndef __APPLE__
 #define VK_USE_PLATFORM_ANDROID_KHR
+#endif
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 
