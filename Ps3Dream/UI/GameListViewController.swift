@@ -2,6 +2,7 @@
 // Main screen showing installed PS3 games (replaces Android MainActivity)
 
 import UIKit
+import UniformTypeIdentifiers
 
 struct PS3Game {
     let titleId: String
@@ -34,7 +35,7 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
             UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addGame)),
             UIBarButtonItem(image: UIImage(systemName: "arrow.clockwise"), style: .plain,
                             target: self, action: #selector(refreshGames))
-        )
+        ]
 
         setupDirectories()
         refreshGames()
@@ -114,7 +115,10 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
         let dataOffset = Int(UInt32(dataBytes[12]) | (UInt32(dataBytes[13]) << 8) |
                             (UInt32(dataBytes[14]) << 16) | (UInt32(dataBytes[15]) << 24))
 
-        if let keyTable = String(data: data, range: keyOffset..<(keyOffset + min(0x400, dataBytes.count - keyOffset))),
+        let keyTableEnd = keyOffset + min(0x400, dataBytes.count - keyOffset)
+        guard keyOffset >= 0, keyOffset < keyTableEnd, keyTableEnd <= dataBytes.count else { return nil }
+
+        if let keyTable = String(data: data.subdata(in: keyOffset..<keyTableEnd), encoding: .utf8),
            let range = keyTable.range(of: "TITLE") {
             let index = keyTable.distance(from: keyTable.startIndex, to: range.lowerBound)
             let actualKeyOffset = keyOffset + index

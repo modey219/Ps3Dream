@@ -23,7 +23,7 @@ class AppSettings {
         static let gameDirectories = "gameDirectories"
     }
 
-    enum Renderer: Int {
+    enum Renderer: Int, Equatable {
         case vulkan = 0
         case null = 1
 
@@ -35,7 +35,7 @@ class AppSettings {
         }
     }
 
-    enum ResolutionScale: Int {
+    enum ResolutionScale: Int, Equatable {
         case native = 0
         case r720p = 1
         case r480p = 2
@@ -60,7 +60,7 @@ class AppSettings {
         }
     }
 
-    enum AudioBackend: Int {
+    enum AudioBackend: Int, Equatable {
         case cubeb = 0
         case null = 1
 
@@ -76,7 +76,7 @@ class AppSettings {
 
     var renderer: Renderer {
         get { Renderer(rawValue: defaults.integer(forKey: Keys.renderer)) ?? .vulkan }
-        set { set(.vulkan, forKey: Keys.renderer) }
+        set { set(newValue.rawValue, forKey: Keys.renderer) }
     }
 
     var resolutionScale: ResolutionScale {
