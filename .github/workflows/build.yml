@@ -1406,6 +1406,28 @@ jobs:
           SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
           echo "iOS SDK: $SDK_PATH"
           
+          # Collect all static libraries produced by the native build:
+          # ps3dream_native (glue) + rpcs3_emu (core) + all 3rdparty libs + MoltenVK
+          NATIVE_LIBS=$(find "$APS3E_CPP/build_ios" -name "*.a" 2>/dev/null | sort -u)
+          MVK_LIB=$(find MoltenVK-build -name "libMoltenVK.a" 2>/dev/null | head -1)
+          if [ -n "$MVK_LIB" ]; then
+            NATIVE_LIBS="$NATIVE_LIBS
+            $MVK_LIB"
+          fi
+          echo "=== Static libraries ==="
+          echo "$NATIVE_LIBS"
+
+          # Build linker args. Libraries are listed in dependency order and then
+          # repeated once so circular references between rpcs3 and 3rdparty
+          # archives resolve.
+          LINK_LIBS=""
+          for lib in $NATIVE_LIBS; do
+            LINK_LIBS="$LINK_LIBS -Xlinker $lib"
+          done
+          for lib in $NATIVE_LIBS; do
+            LINK_LIBS="$LINK_LIBS -Xlinker $lib"
+          done
+
           # Compile Swift sources
           echo "Compiling Swift sources..."
           swiftc \
@@ -1414,9 +1436,8 @@ jobs:
             -module-name Ps3Dream \
             -import-objc-header Ps3Dream/Ps3Dream-Bridging-Header.h \
             $SWIFT_FLAGS \
-            -Xlinker -L"$APP_DIR" \
-            -Xlinker -lps3dream_native \
-            -Xlinker -l"stdc++" \
+            $LINK_LIBS \
+            -Xlinker -lc++ \
             -Xlinker -framework -Xlinker Metal \
             -Xlinker -framework -Xlinker MetalKit \
             -Xlinker -framework -Xlinker QuartzCore \
@@ -1424,10 +1445,15 @@ jobs:
             -Xlinker -framework -Xlinker Foundation \
             -Xlinker -framework -Xlinker CoreGraphics \
             -Xlinker -framework -Xlinker CoreVideo \
+            -Xlinker -framework -Xlinker CoreText \
+            -Xlinker -framework -Xlinker ImageIO \
+            -Xlinker -framework -Xlinker Security \
+            -Xlinker -framework -Xlinker SystemConfiguration \
+            -Xlinker -framework -Xlinker AudioToolbox \
+            -Xlinker -framework -Xlinker AVFoundation \
+            -Xlinker -framework -Xlinker CoreMedia \
             -Xlinker -lsqlite3 \
             -Xlinker -lz \
-            -Xlinker -ldl \
-            -Xlinker -lpthread \
             -Xlinker -ObjC \
             -emit-executable \
             -o "$APP_DIR/Ps3Dream" \
@@ -1438,8 +1464,8 @@ jobs:
             Ps3Dream/UI/VirtualPadOverlay.swift \
             Ps3Dream/UI/SettingsViewController.swift \
             Ps3Dream/Emulator/EmulatorManager.swift \
-            Ps3Dream/Emulator/AppSettings.swift \
-            2>&1 || echo "Swift compilation completed with warnings"
+            Ps3Dream/Emulator/AppSettings.swift
+          test -x "$APP_DIR/Ps3Dream" || { echo "ERROR: Ps3Dream executable was not produced"; exit 1; }
           
           # Create icon placeholder
           mkdir -p "$APP_DIR/Assets.xcassets/AppIcon.appiconset"

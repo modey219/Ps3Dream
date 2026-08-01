@@ -9,6 +9,16 @@
 #import <QuartzCore/CAMetalLayer.h>
 #import <UIKit/UIKit.h>
 
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
+
+// C++ headers are only needed by the Objective-C++ implementation
+// (Ps3DreamBridge.mm). They must NOT be visible to Swift's bridging
+// header, which is compiled as C/Objective-C with no C++ standard
+// library available.
+#ifdef __cplusplus
+
 #include <thread>
 #include <string>
 #include <atomic>
@@ -19,6 +29,8 @@
 // Forward declarations for RPCS3 types we need
 // These match the declarations in aps3e_rp3_impl.h
 #include "ps3dream_emulator.hpp"
+
+#endif
 
 #ifdef __cplusplus
 extern "C" {

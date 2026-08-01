@@ -43,6 +43,12 @@ class EmulatorManager {
     private(set) var state: EmulatorState = .unknown
     private var stateObservation: Any?
 
+    // Static handler storage. Swift closures that capture context cannot be
+    // passed as C function pointers, so the C callbacks below bridge into
+    // these static closures instead.
+    static var statusHandler: ((Int32) -> Void)?
+    static var logHandler: ((UnsafePointer<CChar>?, UnsafePointer<CChar>?, Int32) -> Void)?
+
     private init() {
         setupCallbacks()
     }
@@ -50,7 +56,7 @@ class EmulatorManager {
     // MARK: - Callback Setup
 
     private func setupCallbacks() {
-        ps3dream_set_status_callback { [weak self] status in
+        EmulatorManager.statusHandler = { [weak self] status in
             guard let self = self else { return }
             let newState = EmulatorState(rawValue: status) ?? .unknown
             DispatchQueue.main.async {
@@ -59,14 +65,17 @@ class EmulatorManager {
             }
         }
 
-        ps3dream_set_log_callback { [weak self] tag, message, level in
+        EmulatorManager.logHandler = { [weak self] tag, message, level in
             guard let self = self else { return }
-            let tagStr = String(cString: tag)
-            let msgStr = String(cString: message)
+            let tagStr = tag.map { String(cString: $0) } ?? ""
+            let msgStr = message.map { String(cString: $0) } ?? ""
             DispatchQueue.main.async {
                 self.delegate?.emulator(self, didReceiveLog: tagStr, message: msgStr, level: Int(level))
             }
         }
+
+        ps3dream_set_status_callback(ps3dream_status_callback)
+        ps3dream_set_log_callback(ps3dream_log_callback)
     }
 
     // MARK: - Emulation Control
@@ -186,4 +195,14 @@ class EmulatorManager {
         default: return 0
         }
     }
+}
+
+// Non-capturing shims that can be passed as C function pointers to the
+// emulator bridge. They forward into the static handlers above.
+func ps3dream_status_callback(_ status: Int32) {
+    EmulatorManager.statusHandler?(status)
+}
+
+func ps3dream_log_callback(_ tag: UnsafePointer<CChar>?, _ message: UnsafePointer<CChar>?, _ level: Int32) {
+    EmulatorManager.logHandler?(tag, message, level)
 }
