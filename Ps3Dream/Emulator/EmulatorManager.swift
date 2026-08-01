@@ -58,7 +58,7 @@ class EmulatorManager {
     private func setupCallbacks() {
         EmulatorManager.statusHandler = { [weak self] status in
             guard let self = self else { return }
-            let newState = EmulatorState(rawValue: status) ?? .unknown
+            let newState = EmulatorState(rawValue: Int(status)) ?? .unknown
             DispatchQueue.main.async {
                 self.state = newState
                 self.delegate?.emulator(self, didChangeState: newState)
@@ -120,9 +120,9 @@ class EmulatorManager {
 
     // MARK: - Input
 
-    func sendButton(_ button: String, pressed: Bool, value: Int = pressed ? 255 : 0) {
+    func sendButton(_ button: String, pressed: Bool) {
         let keyCode = Self.buttonToKeyCode(button)
-        ps3dream_key_event(Int32(keyCode), pressed, Int32(value))
+        ps3dream_key_event(Int32(keyCode), pressed, Int32(pressed ? 255 : 0))
     }
 
     func sendStick(_ stick: String, x: Float, y: Float) {
