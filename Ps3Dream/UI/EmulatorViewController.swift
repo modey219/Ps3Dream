@@ -194,7 +194,7 @@ class EmulatorViewController: UIViewController {
         let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .bgra8Unorm, width: width, height: height, mipmapped: false)
         textureDescriptor.usage = [.shaderRead, .renderTarget]
-        textureDescriptor.storageMode = .managed
+        textureDescriptor.storageMode = .shared
 
         guard let stagingTexture = metalView.device?.makeTexture(descriptor: textureDescriptor) else { return }
 
