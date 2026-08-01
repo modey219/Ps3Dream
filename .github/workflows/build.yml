@@ -20,9 +20,15 @@ jobs:
       - name: Install build tools
         run: brew install cmake pkg-config
 
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-${{ runner.arch }}-ios
+          max-size: 2G
+
       - name: Clone rpcs3 core
         run: |
-          git clone --depth 1 --recursive https://github.com/RPCS3/rpcs3.git rpcs3_build
+          git clone --depth 1 --recursive --shallow-submodules --jobs 8 https://github.com/RPCS3/rpcs3.git rpcs3_build
           echo "rpcs3 cloned successfully"
           ls rpcs3_build/CMakeLists.txt
 
@@ -1336,6 +1342,8 @@ jobs:
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -G Xcode
           
           cmake --build . --config Release -- \
