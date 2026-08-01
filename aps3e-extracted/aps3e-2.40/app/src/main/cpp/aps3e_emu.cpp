@@ -710,12 +710,12 @@ namespace ae{
     bool install_pkg(iso_fs& iso_fs, const std::string& path){
 
         std::deque<package_reader> readers;
-        readers.emplace_back(iso_fs, path);
+        readers.emplace_back(path);
 
         std::deque<std::string> bootable_paths;
 
         package_install_result result = package_reader::extract_data(readers, bootable_paths);
-        LOGW("install_pkg %d %s %s",result.error,result.version.expected.c_str(),result.version.found.c_str());
+        LOGW("install_pkg %d %s %s",result.error,result.version.expected.c_str(),result.version.installed.c_str());
         return result.error == package_install_result::error_type::no_error;
     }
 
@@ -726,7 +726,7 @@ namespace ae{
         std::deque<std::string> bootable_paths;
 
         package_install_result result = package_reader::extract_data(readers, bootable_paths);
-        LOGW("install_pkg %d %s %s",result.error,result.version.expected.c_str(),result.version.found.c_str());
+        LOGW("install_pkg %d %s %s",result.error,result.version.expected.c_str(),result.version.installed.c_str());
         return result.error == package_install_result::error_type::no_error;
 
     }

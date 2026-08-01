@@ -364,10 +364,10 @@ public:
         return video_provider.can_consume_frame();
     }
 
-    void present_frame(std::vector<u8>& data, u32 pitch, u32 width, u32 height, bool is_bgra) const
+    void present_frame(std::vector<u8>&& data, u32 pitch, u32 width, u32 height, bool is_bgra) const
     {PR;
         utils::video_provider& video_provider = g_fxo->get<utils::video_provider>();
-        video_provider.present_frame(std::move(const_cast<std::vector<u8>&>(data)), pitch, width, height, is_bgra);
+        video_provider.present_frame(std::move(data), pitch, width, height, is_bgra);
     }
 
     void take_screenshot(std::vector<u8>&& sshot_data, u32 sshot_width, u32 sshot_height, bool is_bgra) {PR;}
