@@ -18,6 +18,7 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
     private let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     private let romsPath = "PS3_Games"
     private let firmwarePath = "Firmware"
+    private var activePickerType = -1
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -166,7 +167,7 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.data])
         picker.delegate = self
         picker.allowsMultipleSelection = false
-        picker.tag = 2 // Firmware picker tag
+        activePickerType = 2 // Firmware picker
         present(picker, animated: true)
     }
 
@@ -211,7 +212,7 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.data])
         picker.delegate = self
         picker.allowsMultipleSelection = false
-        picker.tag = 1 // PKG picker tag
+        activePickerType = 1 // PKG picker
         present(picker, animated: true)
     }
 
@@ -219,7 +220,7 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
         picker.delegate = self
         picker.allowsMultipleSelection = false
-        picker.tag = 0 // Folder picker tag
+        activePickerType = 0 // Folder picker
         present(picker, animated: true)
     }
 
@@ -227,8 +228,10 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
 
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         guard let url = urls.first else { return }
+        let pickerType = activePickerType
+        activePickerType = -1
 
-        switch controller.tag {
+        switch pickerType {
         case 0:
             // Game folder
             let dest = documentsPath.appendingPathComponent(romsPath)
