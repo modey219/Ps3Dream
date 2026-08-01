@@ -187,6 +187,7 @@ static jboolean j_install_firmware(JNIEnv* env,jobject self,jstring pup_path){
 
 
 //esr ctx
+#ifndef __APPLE__
   static const esr_context* find_esr_context(const ucontext_t* ctx)
     {
         u32 offset = 0;
@@ -226,6 +227,7 @@ static void signal_handler(int /*sig*/, siginfo_t* info, void* uct) noexcept
 		LOGE("崩了 esr_ctx->esr %d[0x%x] ec %d[0x%x]",esr_ctx->esr,esr_ctx->esr,(esr_ctx->esr>>26)&0b111111,(esr_ctx->esr>>26)&0b111111)
 	};
 }
+#endif
 
 int register_Emulator(JNIEnv* env);
 int register_Emulator$Config(JNIEnv* env);
