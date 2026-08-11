@@ -1441,6 +1441,7 @@ jobs:
             -DWITH_LLVM=ON \
             -DBUILD_LLVM=OFF \
             -DSTATIC_LINK_LLVM=ON \
+            -DUSE_LTO=OFF \
             -DLLVM_TARGETS_TO_BUILD=AArch64
 
           cmake --build . -- -j 4
@@ -1533,57 +1534,6 @@ jobs:
           for lib in $NATIVE_LIBS; do
             LINK_LIBS="$LINK_LIBS -Xlinker $lib"
           done
-
-          # ---- Diagnostic: librpcs3_emu.a kills ld silently. Introspect it and
-          #      test re-archived variants. Fix-probes run BEFORE the baseline
-          #      repro because a failing probe kills the whole step process. ----
-          set +e
-          trap 'echo "TRAP-EXIT: bash survived all probes"' EXIT
-          SWIFT_FILES="Ps3Dream/Ps3DreamApp.swift Ps3Dream/UI/GameListViewController.swift Ps3Dream/UI/GameCell.swift Ps3Dream/UI/EmulatorViewController.swift Ps3Dream/UI/VirtualPadOverlay.swift Ps3Dream/UI/SettingsViewController.swift Ps3Dream/Emulator/EmulatorManager.swift Ps3Dream/Emulator/AppSettings.swift"
-          FW_FLAGS="-Xlinker -framework -Xlinker UIKit -Xlinker -framework -Xlinker Foundation -Xlinker -framework -Xlinker Metal -Xlinker -framework -Xlinker AVFoundation"
-          SYS_FLAGS="-Xlinker -lc++ -Xlinker -lz -Xlinker -liconv -Xlinker -lsqlite3"
-          GLUE_LIB=$(find "$APS3E_CPP/build_ios" -name "libps3dream_native.a" 2>/dev/null | head -1)
-          PUGIXML_LIB=$(find "$APS3E_CPP/build_ios" -name "libpugixml.a" 2>/dev/null | head -1)
-          RPCS3EMU_LIB=$(find "$APS3E_CPP/build_ios" -name "librpcs3_emu.a" 2>/dev/null | head -1)
-          echo "=== rpcs3 archive sizes ==="
-          ls -lh "$GLUE_LIB" "$PUGIXML_LIB" "$RPCS3EMU_LIB"
-          echo "=== librpcs3_emu.a member listing (ar verbose, sizes) ==="
-          ar tv "$RPCS3EMU_LIB" 2>&1 | head -40
-          echo "member count: $(ar t "$RPCS3EMU_LIB" | wc -l)"
-          echo "symbol count: $(nm -a "$RPCS3EMU_LIB" 2>&1 | wc -l)"
-          echo "=== file type of each member ==="
-          mkdir -p /tmp/emu_members
-          cd /tmp/emu_members
-          ar -x "$RPCS3EMU_LIB"
-          for f in *.o; do file "$f"; done | sed -E 's/.*\.o: //' | sort | uniq -c
-          cd "$GITHUB_WORKSPACE"
-          echo "=== re-archived with Apple libtool ==="
-          libtool -static -o /tmp/librpcs3_emu_libtool.a "$RPCS3EMU_LIB" 2>&1
-          echo "libtool exit=$?"
-          ls -lh /tmp/librpcs3_emu_libtool.a
-          echo "=== re-archived with ar (llvm-ar not needed) ==="
-          cd /tmp/emu_members
-          ar rcs /tmp/librpcs3_emu_llvmar.a *.o
-          echo "ar exit=$?"
-          ls -lh /tmp/librpcs3_emu_llvmar.a
-          cd "$GITHUB_WORKSPACE"
-          probe_link() {
-            local out="$1"; shift
-            echo "--- probe_link $out ---"
-            "$SWIFT_BIN" -sdk "$SDK_PATH" -target arm64-apple-ios17.0 \
-              -import-objc-header Ps3Dream/Ps3Dream-Bridging-Header.h \
-              $SWIFT_FLAGS -emit-executable -o "$out" -Xlinker -v -Xlinker -t "$@" $FW_FLAGS $SYS_FLAGS $SWIFT_FILES 2>&1 | tail -60
-            echo "PROBE $out exit=${PIPESTATUS[0]}"
-          }
-          echo "=== PROBE F1: libtool re-archived rpcs3_emu only ==="
-          probe_link /tmp/probe_emu_libtool -Xlinker /tmp/librpcs3_emu_libtool.a
-          echo "=== PROBE F2: llvm-ar re-archived rpcs3_emu only ==="
-          probe_link /tmp/probe_emu_llvmar -Xlinker /tmp/librpcs3_emu_llvmar.a
-          echo "=== PROBE F3: original rpcs3_emu with -force_load ==="
-          probe_link /tmp/probe_emu_forceload -Xlinker -force_load -Xlinker "$RPCS3EMU_LIB"
-          echo "=== PROBE F4: baseline original rpcs3_emu only (expect silent kill) ==="
-          probe_link /tmp/probe_emu_baseline -Xlinker "$RPCS3EMU_LIB"
-          echo "=== ALL PROBES DONE ==="
 
           # Compile Swift sources
           echo "Compiling Swift sources..."
