@@ -1563,6 +1563,8 @@ jobs:
             -Xlinker -lz \
             -Xlinker -liconv \
             -Xlinker -ObjC \
+            -Xlinker -v \
+            -Xlinker -t \
             -emit-executable \
             -o "$APP_DIR/Ps3Dream" \
             Ps3Dream/Ps3DreamApp.swift \
