@@ -18,7 +18,7 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
 
       - name: Install build tools
-        run: brew install cmake pkg-config
+        run: brew install cmake pkg-config ninja llvm@22
 
       - name: Set up ccache
         uses: hendrikmuhs/ccache-action@v1.2
@@ -26,11 +26,71 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-ios
           max-size: 2G
 
-      - name: Clone rpcs3 core
+      - name: Clone rpcs3 core (pinned)
         run: |
-          git clone --depth 1 --recursive --shallow-submodules --jobs 8 https://github.com/RPCS3/rpcs3.git rpcs3_build
-          echo "rpcs3 cloned successfully"
+          git init rpcs3_build
+          git -C rpcs3_build remote add origin https://github.com/RPCS3/rpcs3.git
+          git -C rpcs3_build fetch --depth 1 origin db907a258687a86fb30275765e8e7ca430567897
+          git -C rpcs3_build checkout FETCH_HEAD
+          git -C rpcs3_build submodule update --init --recursive --depth 1 --jobs 8
+          echo "rpcs3 pinned to db907a258687a86fb30275765e8e7ca430567897"
           ls rpcs3_build/CMakeLists.txt
+
+      - name: Build LLVM for iOS arm64
+        run: |
+          set -e
+          LLVM_SRC="$PWD/rpcs3_build/3rdparty/llvm/llvm"
+          LLVM_BUILD="$PWD/llvm-build"
+          LLVM_INSTALL="$PWD/llvm-ios-install"
+          IOS_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          CLANG_BIN="$(brew --prefix llvm@22)/bin"
+
+          test -f "$LLVM_SRC/llvm/CMakeLists.txt" || { echo "LLVM submodule missing"; exit 1; }
+          test -x "$CLANG_BIN/llvm-tblgen" || { echo "brew llvm-tblgen missing"; exit 1; }
+          echo "iOS SDK: $IOS_SDK"
+          echo "LLVM tblgen: $($CLANG_BIN/llvm-tblgen --version | head -1)"
+
+          cmake -S "$LLVM_SRC/llvm" -B "$LLVM_BUILD" -G Ninja \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT="$IOS_SDK" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_C_COMPILER="$CLANG_BIN/clang" \
+            -DCMAKE_CXX_COMPILER="$CLANG_BIN/clang++" \
+            -DCMAKE_C_COMPILER_TARGET=arm64-apple-ios17.0 \
+            -DCMAKE_CXX_COMPILER_TARGET=arm64-apple-ios17.0 \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLLVM_TARGETS_TO_BUILD=AArch64 \
+            -DLLVM_TARGET_ARCH=AArch64 \
+            -DLLVM_DEFAULT_TARGET_TRIPLE=arm64-apple-ios17.0 \
+            -DLLVM_TABLEGEN="$CLANG_BIN/llvm-tblgen" \
+            -DLLVM_BUILD_RUNTIME=OFF \
+            -DLLVM_BUILD_TOOLS=OFF \
+            -DLLVM_INCLUDE_BENCHMARKS=OFF \
+            -DLLVM_INCLUDE_DOCS=OFF \
+            -DLLVM_INCLUDE_EXAMPLES=OFF \
+            -DLLVM_INCLUDE_TESTS=OFF \
+            -DLLVM_INCLUDE_TOOLS=OFF \
+            -DLLVM_INCLUDE_UTILS=OFF \
+            -DLLVM_ENABLE_WARNINGS=OFF \
+            -DLLVM_ENABLE_ASSERTIONS=OFF \
+            -DLLVM_ENABLE_ZLIB=OFF \
+            -DLLVM_ENABLE_ZSTD=OFF \
+            -DLLVM_ENABLE_TERMINFO=OFF \
+            -DLLVM_ENABLE_LIBEDIT=OFF \
+            -DLLVM_ENABLE_LIBXML2=OFF \
+            -DLLVM_ENABLE_THREADS=OFF \
+            -DLLVM_BUILD_LLVM_DYLIB=OFF \
+            -DLLVM_LINK_LLVM_DYLIB=OFF \
+            -DCMAKE_INSTALL_PREFIX="$LLVM_INSTALL"
+
+          cmake --build "$LLVM_BUILD" -- -j 4
+          cmake --install "$LLVM_BUILD"
+          echo "=== LLVM iOS install ==="
+          ls "$LLVM_INSTALL/lib/cmake/llvm/LLVMConfig.cmake"
+          ls "$LLVM_INSTALL/lib" | head -40
 
       - name: Download MoltenVK pre-built
         run: |
@@ -1097,7 +1157,26 @@ jobs:
           add_library(cubeb INTERFACE)
           target_include_directories(cubeb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../../ffmpeg_stubs)
           add_library(rtmidi INTERFACE)
-          add_library(3rdparty_llvm INTERFACE)
+          if(WITH_LLVM)
+            find_package(LLVM CONFIG REQUIRED)
+            if(LLVM_VERSION VERSION_LESS 18)
+              message(FATAL_ERROR "Found LLVM ${LLVM_VERSION}. Required version 18 or above.")
+            endif()
+            if(STATIC_LINK_LLVM)
+              if(NOT DEFINED LLVM_TARGETS_TO_BUILD)
+                set(LLVM_TARGETS_TO_BUILD AArch64)
+              endif()
+              llvm_map_components_to_libnames(LLVM_LIBS ${LLVM_TARGETS_TO_BUILD} Core ExecutionEngine MCJIT Passes)
+            else()
+              set(LLVM_LIBS LLVM)
+            endif()
+            add_library(3rdparty_llvm INTERFACE)
+            target_link_libraries(3rdparty_llvm INTERFACE ${LLVM_LIBS})
+            target_include_directories(3rdparty_llvm SYSTEM INTERFACE ${LLVM_INCLUDE_DIRS})
+            target_compile_definitions(3rdparty_llvm INTERFACE LLVM_AVAILABLE)
+          else()
+            add_library(3rdparty_llvm INTERFACE)
+          endif()
           add_library(3rdparty_sdl3 INTERFACE)
           add_library(3rdparty_protobuf INTERFACE)
           add_library(3rdparty_vulkanmemoryallocator INTERFACE)
@@ -1184,10 +1263,12 @@ jobs:
           set(USE_SYSTEM_LIBPNG OFF CACHE BOOL "" FORCE)
           set(USE_LIBUPNP OFF CACHE BOOL "" FORCE)
           set(USE_SYSTEM_FFTW OFF CACHE BOOL "" FORCE)
-          set(USE_LLVM OFF CACHE BOOL "" FORCE)
+          set(WITH_LLVM ON CACHE BOOL "" FORCE)
+          set(BUILD_LLVM OFF CACHE BOOL "" FORCE)
+          set(STATIC_LINK_LLVM ON CACHE BOOL "" FORCE)
+          set(LLVM_TARGETS_TO_BUILD "AArch64" CACHE STRING "" FORCE)
           set(USE_NATIVE_INSTRUCTIONS OFF CACHE BOOL "" FORCE)
           set(USE_SYSTEM_LIBLZMA OFF CACHE BOOL "" FORCE)
-          set(BUILD_LLVM OFF CACHE BOOL "" FORCE)
           set(USE_SYSTEM_BOOST OFF CACHE BOOL "" FORCE)
           set(USE_VULKAN_MEM_ALLOC OFF CACHE BOOL "" FORCE)
           
@@ -1328,29 +1409,37 @@ jobs:
           
           # Compute absolute path for ffmpeg stubs
           FFMPEG_STUBS_DIR="$(cd .. && pwd)/ffmpeg_stubs"
-          
+
+          CLANG_BIN="$(brew --prefix llvm@22)/bin"
+          LLVM_INSTALL="$GITHUB_WORKSPACE/llvm-ios-install"
+          IOS_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          export PATH="$CLANG_BIN:$PATH"
+
           cmake .. \
+            -G Ninja \
             -DCMAKE_SYSTEM_NAME=iOS \
             -DIOS=TRUE \
             -DANDROID=TRUE \
             -DANDROID_PLATFORM_LEVEL=30 \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 \
             -DCMAKE_OSX_ARCHITECTURES="arm64" \
+            -DCMAKE_OSX_SYSROOT="$IOS_SDK" \
+            -DCMAKE_C_COMPILER="$CLANG_BIN/clang" \
+            -DCMAKE_CXX_COMPILER="$CLANG_BIN/clang++" \
+            -DCMAKE_C_COMPILER_TARGET=arm64-apple-ios17.0 \
+            -DCMAKE_CXX_COMPILER_TARGET=arm64-apple-ios17.0 \
             "-DCMAKE_C_FLAGS=-I${FFMPEG_STUBS_DIR}" \
             "-DCMAKE_CXX_FLAGS=-I${FFMPEG_STUBS_DIR}" \
-            -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -G Xcode
-          
-          cmake --build . --config Release -- \
-            -sdk iphoneos \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLLVM_DIR="$LLVM_INSTALL/lib/cmake/llvm" \
+            -DWITH_LLVM=ON \
+            -DBUILD_LLVM=OFF \
+            -DSTATIC_LINK_LLVM=ON \
+            -DLLVM_TARGETS_TO_BUILD=AArch64
+
+          cmake --build . -- -j 4
 
       - name: Build Swift app and package IPA
         run: |
@@ -1407,8 +1496,13 @@ jobs:
           echo "iOS SDK: $SDK_PATH"
           
           # Collect all static libraries produced by the native build:
-          # ps3dream_native (glue) + rpcs3_emu (core) + all 3rdparty libs + MoltenVK
+          # ps3dream_native (glue) + rpcs3_emu (core) + all 3rdparty libs + LLVM + MoltenVK
           NATIVE_LIBS=$(find "$APS3E_CPP/build_ios" -name "*.a" 2>/dev/null | sort -u)
+          LLVM_LIBS=$(find "$GITHUB_WORKSPACE/llvm-ios-install/lib" -name "*.a" 2>/dev/null | sort -u)
+          if [ -n "$LLVM_LIBS" ]; then
+            NATIVE_LIBS="$NATIVE_LIBS
+            $LLVM_LIBS"
+          fi
           MVK_LIB=$(find MoltenVK-build -name "libMoltenVK.a" 2>/dev/null | head -1)
           if [ -n "$MVK_LIB" ]; then
             NATIVE_LIBS="$NATIVE_LIBS
@@ -1454,6 +1548,7 @@ jobs:
             -Xlinker -framework -Xlinker CoreMedia \
             -Xlinker -lsqlite3 \
             -Xlinker -lz \
+            -Xlinker -liconv \
             -Xlinker -ObjC \
             -emit-executable \
             -o "$APP_DIR/Ps3Dream" \
