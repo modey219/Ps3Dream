@@ -1537,6 +1537,7 @@ jobs:
           # Compile Swift sources
           echo "Compiling Swift sources..."
           "$SWIFT_BIN" \
+            -v \
             -sdk "$SDK_PATH" \
             -target arm64-apple-ios17.0 \
             -module-name Ps3Dream \
