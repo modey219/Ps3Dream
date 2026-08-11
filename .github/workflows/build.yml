@@ -1535,36 +1535,44 @@ jobs:
           done
 
           # ---- Diagnostic link probes to bisect the silent ld exit 1 ----
+          set +e
+          trap 'echo "TRAP-EXIT: bash survived all probes"' EXIT
           SWIFT_FILES="Ps3Dream/Ps3DreamApp.swift Ps3Dream/UI/GameListViewController.swift Ps3Dream/UI/GameCell.swift Ps3Dream/UI/EmulatorViewController.swift Ps3Dream/UI/VirtualPadOverlay.swift Ps3Dream/UI/SettingsViewController.swift Ps3Dream/Emulator/EmulatorManager.swift Ps3Dream/Emulator/AppSettings.swift"
           FW_FLAGS="-Xlinker -framework -Xlinker UIKit -Xlinker -framework -Xlinker Foundation -Xlinker -framework -Xlinker Metal -Xlinker -framework -Xlinker AVFoundation"
           SYS_FLAGS="-Xlinker -lc++ -Xlinker -lz -Xlinker -liconv -Xlinker -lsqlite3"
+          GLUE_LIB=$(find "$APS3E_CPP/build_ios" -name "libps3dream_native.a" 2>/dev/null | head -1)
+          PUGIXML_LIB=$(find "$APS3E_CPP/build_ios" -name "libpugixml.a" 2>/dev/null | head -1)
+          RPCS3EMU_LIB=$(find "$APS3E_CPP/build_ios" -name "librpcs3_emu.a" 2>/dev/null | head -1)
+          echo "=== rpcs3 archive sizes ==="
+          ls -lh "$GLUE_LIB" "$PUGIXML_LIB" "$RPCS3EMU_LIB"
+          for a in "$GLUE_LIB" "$PUGIXML_LIB" "$RPCS3EMU_LIB"; do
+            echo "members($a): $(ar t "$a" | wc -l)"
+          done
           probe_link() {
             local out="$1"; shift
+            echo "--- probe_link $out ---"
             "$SWIFT_BIN" -sdk "$SDK_PATH" -target arm64-apple-ios17.0 \
               -import-objc-header Ps3Dream/Ps3Dream-Bridging-Header.h \
               $SWIFT_FLAGS -emit-executable -o "$out" -Xlinker -v -Xlinker -t "$@" $FW_FLAGS $SYS_FLAGS $SWIFT_FILES 2>&1 | tail -60
             echo "PROBE $out exit=${PIPESTATUS[0]}"
           }
-          echo "=== PROBE 1: Swift only, no static libs (expect visible Undefined symbols) ==="
+          echo "=== PROBE 1: Swift only (expect visible Undefined symbols) ==="
           probe_link /tmp/probe_swiftonly
+          echo "=== PROBE 2: LLVM only (expect visible Undefined symbols) ==="
           LLVM_ONLY_LIBS=""
           for lib in $LLVM_LIBS; do
             LLVM_ONLY_LIBS="$LLVM_ONLY_LIBS -Xlinker $lib"
           done
-          echo "=== PROBE 2: LLVM libs only, no rpcs3/MoltenVK ==="
           probe_link /tmp/probe_llvmonly $LLVM_ONLY_LIBS
-          RPCS3_LIBS=""
-          for lib in $NATIVE_LIBS; do
-            case "$lib" in
-              *llvm-ios-install*) ;;
-              *libMoltenVK.a) ;;
-              *) RPCS3_LIBS="$RPCS3_LIBS -Xlinker $lib" ;;
-            esac
-          done
-          echo "=== PROBE 3: rpcs3 libs only, no MoltenVK, no LLVM ==="
-          probe_link /tmp/probe_rpcs3only $RPCS3_LIBS
-          echo "=== PROBE 4: MoltenVK only ==="
-          probe_link /tmp/probe_mvkonly -Xlinker "$MVK_LIB"
+          echo "=== PROBE 3: glue lib only ==="
+          probe_link /tmp/probe_glueonly -Xlinker "$GLUE_LIB"
+          echo "=== PROBE 4: pugixml only ==="
+          probe_link /tmp/probe_pugixmlonly -Xlinker "$PUGIXML_LIB"
+          echo "=== PROBE 5: rpcs3_emu only ==="
+          probe_link /tmp/probe_emuonly -Xlinker "$RPCS3EMU_LIB"
+          echo "=== PROBE 6: glue + pugixml + rpcs3_emu ==="
+          probe_link /tmp/probe_rpcs3all -Xlinker "$GLUE_LIB" -Xlinker "$PUGIXML_LIB" -Xlinker "$RPCS3EMU_LIB"
+          echo "=== ALL PROBES DONE ==="
 
           # Compile Swift sources
           echo "Compiling Swift sources..."
