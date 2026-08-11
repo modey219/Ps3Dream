@@ -1534,6 +1534,35 @@ jobs:
             LINK_LIBS="$LINK_LIBS -Xlinker $lib"
           done
 
+          # ---- Diagnostic link probes to bisect the silent ld exit 1 ----
+          SWIFT_FILES="Ps3Dream/Ps3DreamApp.swift Ps3Dream/UI/GameListViewController.swift Ps3Dream/UI/GameCell.swift Ps3Dream/UI/EmulatorViewController.swift Ps3Dream/UI/VirtualPadOverlay.swift Ps3Dream/UI/SettingsViewController.swift Ps3Dream/Emulator/EmulatorManager.swift Ps3Dream/Emulator/AppSettings.swift"
+          FW_FLAGS="-Xlinker -framework -Xlinker UIKit -Xlinker -framework -Xlinker Foundation -Xlinker -framework -Xlinker Metal -Xlinker -framework -Xlinker AVFoundation"
+          SYS_FLAGS="-Xlinker -lc++ -Xlinker -lz -Xlinker -liconv -Xlinker -lsqlite3"
+          probe_link() {
+            local out="$1"; shift
+            "$SWIFT_BIN" -sdk "$SDK_PATH" -target arm64-apple-ios17.0 \
+              -import-objc-header Ps3Dream/Ps3Dream-Bridging-Header.h \
+              $SWIFT_FLAGS -emit-executable -o "$out" "$@" $FW_FLAGS $SYS_FLAGS $SWIFT_FILES 2>&1 | tail -20
+            echo "PROBE $out exit=${PIPESTATUS[0]}"
+          }
+          echo "=== PROBE 1: Swift only, no static libs (expect visible Undefined symbols) ==="
+          probe_link /tmp/probe_swiftonly
+          LLVM_ONLY_LIBS=""
+          for lib in $LLVM_LIBS; do
+            LLVM_ONLY_LIBS="$LLVM_ONLY_LIBS -Xlinker $lib"
+          done
+          echo "=== PROBE 2: LLVM libs only, no rpcs3/MoltenVK ==="
+          probe_link /tmp/probe_llvmonly $LLVM_ONLY_LIBS
+          NOLLVM_LIBS=""
+          for lib in $NATIVE_LIBS; do
+            case "$lib" in
+              *llvm-ios-install*) ;;
+              *) NOLLVM_LIBS="$NOLLVM_LIBS -Xlinker $lib" ;;
+            esac
+          done
+          echo "=== PROBE 3: rpcs3 + MoltenVK, no LLVM ==="
+          probe_link /tmp/probe_nollvm $NOLLVM_LIBS
+
           # Compile Swift sources
           echo "Compiling Swift sources..."
           "$SWIFT_BIN" \
