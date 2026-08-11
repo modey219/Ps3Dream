@@ -1498,6 +1498,14 @@ jobs:
           # Find iOS SDK
           SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
           echo "iOS SDK: $SDK_PATH"
+
+          # The /usr/bin/swiftc macOS CLI stub overrides SDKROOT to the MacOSX SDK,
+          # which makes the clang link step use a MacOSX sysroot while targeting
+          # iPhone and fail with exit code 1. Use the real toolchain swiftc and
+          # pin SDKROOT to the iPhoneOS SDK.
+          export SDKROOT="$SDK_PATH"
+          SWIFT_BIN="$(xcrun -f swiftc)"
+          echo "Swift compiler: $SWIFT_BIN"
           
           # Collect all static libraries produced by the native build:
           # ps3dream_native (glue) + rpcs3_emu (core) + all 3rdparty libs + LLVM + MoltenVK
@@ -1528,7 +1536,7 @@ jobs:
 
           # Compile Swift sources
           echo "Compiling Swift sources..."
-          swiftc \
+          "$SWIFT_BIN" \
             -sdk "$SDK_PATH" \
             -target arm64-apple-ios17.0 \
             -module-name Ps3Dream \
