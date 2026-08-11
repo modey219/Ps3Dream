@@ -1542,7 +1542,7 @@ jobs:
             local out="$1"; shift
             "$SWIFT_BIN" -sdk "$SDK_PATH" -target arm64-apple-ios17.0 \
               -import-objc-header Ps3Dream/Ps3Dream-Bridging-Header.h \
-              $SWIFT_FLAGS -emit-executable -o "$out" "$@" $FW_FLAGS $SYS_FLAGS $SWIFT_FILES 2>&1 | tail -20
+              $SWIFT_FLAGS -emit-executable -o "$out" -Xlinker -v -Xlinker -t "$@" $FW_FLAGS $SYS_FLAGS $SWIFT_FILES 2>&1 | tail -60
             echo "PROBE $out exit=${PIPESTATUS[0]}"
           }
           echo "=== PROBE 1: Swift only, no static libs (expect visible Undefined symbols) ==="
@@ -1553,15 +1553,18 @@ jobs:
           done
           echo "=== PROBE 2: LLVM libs only, no rpcs3/MoltenVK ==="
           probe_link /tmp/probe_llvmonly $LLVM_ONLY_LIBS
-          NOLLVM_LIBS=""
+          RPCS3_LIBS=""
           for lib in $NATIVE_LIBS; do
             case "$lib" in
               *llvm-ios-install*) ;;
-              *) NOLLVM_LIBS="$NOLLVM_LIBS -Xlinker $lib" ;;
+              *libMoltenVK.a) ;;
+              *) RPCS3_LIBS="$RPCS3_LIBS -Xlinker $lib" ;;
             esac
           done
-          echo "=== PROBE 3: rpcs3 + MoltenVK, no LLVM ==="
-          probe_link /tmp/probe_nollvm $NOLLVM_LIBS
+          echo "=== PROBE 3: rpcs3 libs only, no MoltenVK, no LLVM ==="
+          probe_link /tmp/probe_rpcs3only $RPCS3_LIBS
+          echo "=== PROBE 4: MoltenVK only ==="
+          probe_link /tmp/probe_mvkonly -Xlinker "$MVK_LIB"
 
           # Compile Swift sources
           echo "Compiling Swift sources..."
