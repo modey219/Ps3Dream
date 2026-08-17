@@ -1028,6 +1028,66 @@ jobs:
           }
           ALOGEOF
           
+          # Create minimal GL/glew.h stub (GLEW submodule is empty; OpenGL.h includes it on non-Windows)
+          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/GLEW/include/GL"
+          cat > "$APS3E_CPP/rpcs3/3rdparty/GLEW/include/GL/glew.h" << 'GLEWEOF'
+          #pragma once
+          #ifndef __glew_h__
+          #define __glew_h__
+          #include <stdint.h>
+          #ifndef __gl_h_
+          #define __gl_h_
+          typedef unsigned int GLenum;
+          typedef unsigned char GLboolean;
+          typedef unsigned int GLbitfield;
+          typedef void GLvoid;
+          typedef signed char GLbyte;
+          typedef short GLshort;
+          typedef int GLint;
+          typedef unsigned char GLubyte;
+          typedef unsigned short GLushort;
+          typedef unsigned int GLuint;
+          typedef float GLfloat;
+          typedef float GLclampf;
+          typedef double GLdouble;
+          typedef double GLclampd;
+          typedef long GLsizei;
+          typedef long GLintptr;
+          typedef long GLsizeiptr;
+          typedef ptrdiff_t GLsizeiptrARB;
+          typedef ptrdiff_t GLintptrARB;
+          typedef char GLchar;
+          typedef unsigned long long GLuint64;
+          typedef long long GLint64;
+          typedef unsigned int GLsync;
+          struct __GLsync {};
+          #define GL_FALSE 0
+          #define GL_TRUE 1
+          #endif
+          #ifndef __glu_h__
+          #define __glu_h__
+          #endif
+          #define GLEW_OK 0
+          #define GLEW_ERROR_NO_VERSION 1
+          #define GLEW_VERSION_1_1 1
+          #define GLEW_VERSION_1_2 1
+          #define GLEW_VERSION_1_3 1
+          #define GLEW_VERSION_1_4 1
+          #define GLEW_VERSION_1_5 1
+          #define GLEW_VERSION_2_0 1
+          #define GLEW_VERSION_2_1 1
+          #define GLEW_VERSION_3_0 1
+          #define GLEW_VERSION_3_1 1
+          #define GLEW_VERSION_3_2 1
+          static inline GLenum glewInit(void) { return 0; }
+          static inline const char* glewGetErrorString(GLenum e) { (void)e; return ""; }
+          static inline const char* glewGetString(GLenum e) { (void)e; return ""; }
+          static inline GLboolean glewIsSupported(const char* e) { (void)e; return 1; }
+          static inline GLboolean glewIsExtensionSupported(const char* e) { (void)e; return 1; }
+          #define glewExperimental 1
+          #endif
+          GLEWEOF
+          
           # Create miniupnp stub headers (UPnP disabled but headers still included)
           MINIFILE="$APS3E_CPP/ffmpeg_stubs/miniupnpc.h"
           echo '#pragma once' > "$MINIFILE"
