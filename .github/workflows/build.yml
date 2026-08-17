@@ -944,8 +944,10 @@ jobs:
           # Patch Emu/CMakeLists.txt - remove NP sources (need protobuf, curl, wolfssl)
           EMU_CMAKE="$APS3E_CPP/rpcs3/rpcs3/Emu/CMakeLists.txt"
           if [ -f "$EMU_CMAKE" ]; then
-            # Remove the entire NP sources block
-            sed -i '' '/^# Np$/,/^  )$/{ /^  )$/!d; /^  )$/d; }' "$EMU_CMAKE"
+            # Remove only the NP sources block (lines between "# Np" and its
+            # closing ")"). The block ends at the FIRST line that is exactly
+            # ")", so the Memory, RSX and Vulkan sections below stay intact.
+            sed -i '' '/^# Np$/,/^)$/d' "$EMU_CMAKE"
             # Also remove NP-related link libs
             sed -i '' '/3rdparty::wolfssl/d; /3rdparty::protobuf/d; /3rdparty::libcurl/d; /3rdparty::miniupnpc/d' "$EMU_CMAKE"
             # Remove sceNp modules that reference NP headers
@@ -1118,6 +1120,7 @@ jobs:
               add_compile_options("$<$<COMPILE_LANGUAGE:CXX,C>:-w>")
           endif()
           add_library(3rdparty_dummy_lib INTERFACE)
+          add_library(3rdparty_vulkan INTERFACE)
           find_package(ZLIB REQUIRED)
           add_library(3rdparty_zlib INTERFACE)
           target_link_libraries(3rdparty_zlib INTERFACE ZLIB::ZLIB)
@@ -1451,9 +1454,9 @@ jobs:
           # Build the 3rdparty static archives that librpcs3_emu.a references but
           # that the static-only build graph does not pull in (the PRIVATE deps of
           # a static library are only needed at the final link).
-          cmake --build . --target libzstd_static png_static Fusion -- -j 4
+          cmake --build . --target libzstd_static png_static Fusion yaml-cpp soundtouch asmjit SPIRV -- -j 4
           echo "=== 3rdparty archives ==="
-          find . \( -name "libzstd_static.a" -o -name "libpng_static.a" -o -name "libFusion.a" \) -print
+          find . \( -name "libzstd_static.a" -o -name "libpng_static.a" -o -name "libFusion.a" -o -name "libyaml-cpp.a" -o -name "libsoundtouch.a" -o -name "libasmjit.a" -o -name "libSPIRV.a" \) -print
 
       - name: Build Swift app and package IPA
         run: |
@@ -1523,6 +1526,13 @@ jobs:
             -c Ps3Dream/Platform/ios_jit_stub.c -o "$APP_DIR/ios_jit_stub.o"
           xcrun -sdk iphoneos clang -target arm64-apple-ios17.0 \
             -c Ps3Dream/Platform/ios_metal_stub.m -o "$APP_DIR/ios_metal_stub.o"
+          xcrun -sdk iphoneos clang++ -target arm64-apple-ios17.0 -std=c++20 \
+            -DARCH_ARM64=1 -D'__API_UNAVAILABLE(...)=' \
+            -I"$APS3E_CPP/rpcs3/rpcs3" \
+            -I"$APS3E_CPP/rpcs3/rpcs3/Utilities" \
+            -I"$APS3E_CPP/rpcs3/rpcs3/3rdparty" \
+            -I"$APS3E_CPP/ffmpeg_stubs" \
+            -c Ps3Dream/Platform/ios_link_stub.cpp -o "$APP_DIR/ios_link_stub.o"
           
           # Collect all static libraries produced by the native build:
           # ps3dream_native (glue) + rpcs3_emu (core) + all 3rdparty libs + LLVM + MoltenVK
@@ -1593,7 +1603,8 @@ jobs:
             Ps3Dream/Emulator/EmulatorManager.swift \
             Ps3Dream/Emulator/AppSettings.swift \
             "$APP_DIR/ios_jit_stub.o" \
-            "$APP_DIR/ios_metal_stub.o"
+            "$APP_DIR/ios_metal_stub.o" \
+            "$APP_DIR/ios_link_stub.o"
           test -x "$APP_DIR/Ps3Dream" || { echo "ERROR: Ps3Dream executable was not produced"; exit 1; }
           
           # Create icon placeholder
