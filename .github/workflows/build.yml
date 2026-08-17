@@ -1088,6 +1088,38 @@ jobs:
           #endif
           GLEWEOF
           
+          # Create OpenGL/gl.h and OpenGL/glu.h stubs (iOS SDK lacks the OpenGL framework)
+          mkdir -p "$APS3E_CPP/ffmpeg_stubs/OpenGL"
+          cat > "$APS3E_CPP/ffmpeg_stubs/OpenGL/gl.h" << 'GLSTUBEOF'
+          #pragma once
+          #ifndef __gl_h_
+          #define __gl_h_
+          #include <stdint.h>
+          typedef unsigned int GLenum;
+          typedef unsigned char GLboolean;
+          typedef unsigned int GLbitfield;
+          typedef void GLvoid;
+          typedef signed char GLbyte;
+          typedef short GLshort;
+          typedef int GLint;
+          typedef unsigned char GLubyte;
+          typedef unsigned short GLushort;
+          typedef unsigned int GLuint;
+          typedef float GLfloat;
+          typedef float GLclampf;
+          typedef double GLdouble;
+          typedef double GLclampd;
+          typedef long GLsizei;
+          typedef long GLintptr;
+          typedef long GLsizeiptr;
+          typedef char GLchar;
+          typedef unsigned long long GLuint64;
+          typedef long long GLint64;
+          typedef unsigned int GLsync;
+          #endif
+          GLSTUBEOF
+          cp "$APS3E_CPP/ffmpeg_stubs/OpenGL/gl.h" "$APS3E_CPP/ffmpeg_stubs/OpenGL/glu.h"
+          
           # Create miniupnp stub headers (UPnP disabled but headers still included)
           MINIFILE="$APS3E_CPP/ffmpeg_stubs/miniupnpc.h"
           echo '#pragma once' > "$MINIFILE"
