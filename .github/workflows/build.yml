@@ -1156,6 +1156,7 @@ jobs:
           add_library(3rdparty_ffmpeg INTERFACE)
           target_include_directories(3rdparty_ffmpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../../ffmpeg_stubs)
           add_library(3rdparty_glew INTERFACE)
+          target_include_directories(3rdparty_glew INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/GLEW/include")
           add_library(3rdparty_opengl INTERFACE)
           add_library(3rdparty_openal INTERFACE)
           add_library(3rdparty_hidapi INTERFACE)
