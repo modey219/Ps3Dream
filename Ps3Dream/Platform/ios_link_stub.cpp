@@ -439,6 +439,18 @@ cfg_input_configurations g_cfg_input_configs;
 std::string g_input_config_override;
 
 // ---------------------------------------------------------------------------
+// Overlay friends_list_dialog – some overlay files reference this even though
+// the RPCN backend is not compiled.  Provide minimal stubs.
+// ---------------------------------------------------------------------------
+#include "Emu/RSX/Overlays/overlay_friends_list_dialog.h"
+
+namespace rsx::overlays {
+    friends_list_dialog::friends_list_dialog() {}
+    void friends_list_dialog::show(bool, std::function<void(int)>) {}
+    bool friends_list_dialog::rpcn_configured() { return false; }
+}
+
+// ---------------------------------------------------------------------------
 // AArch64 GHC frame preservation pass – referenced by PPUTranslator and
 // SPULLVMRecompiler.  We include the real header (needs LLVM_AVAILABLE and
 // LLVM headers) for correct ABI and provide no-op implementations.
