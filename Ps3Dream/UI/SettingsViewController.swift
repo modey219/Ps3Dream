@@ -18,7 +18,6 @@ class SettingsViewController: UITableViewController {
     }
 
     private func rebuildItems() {
-        let memInfo = MemoryMonitor.shared.getCurrentInfo()
         let totalMB = MemoryMonitor.deviceMemoryMB
         let spuThreads = MemoryMonitor.recommendedSPUThreads
 
@@ -100,7 +99,7 @@ class SettingsViewController: UITableViewController {
             cell.selectionStyle = .default
 
         case (5, 1):
-            cell.textColor = .systemRed
+            cell.textLabel?.textColor = .systemRed
             cell.selectionStyle = .default
 
         default:
