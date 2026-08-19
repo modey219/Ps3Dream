@@ -1645,6 +1645,7 @@ jobs:
             -c Ps3Dream/Platform/ios_metal_stub.m -o "$APP_DIR/ios_metal_stub.o"
           xcrun -sdk iphoneos clang++ -target arm64-apple-ios17.0 -std=c++20 \
             -DARCH_ARM64=1 -D'__API_UNAVAILABLE(...)=' \
+            -I"$APS3E_CPP/rpcs3" \
             -I"$APS3E_CPP/rpcs3/rpcs3" \
             -I"$APS3E_CPP/rpcs3/rpcs3/Utilities" \
             -I"$APS3E_CPP/rpcs3/rpcs3/3rdparty" \
