@@ -151,6 +151,7 @@ jobs:
           cp -r rpcs3_build/rpcs3 "$SRC_DIR/rpcs3/rpcs3"
           
           # Copy 3rdparty from rpcs3
+          mkdir -p "$SRC_DIR/rpcs3/3rdparty"
           cp -rn rpcs3_build/3rdparty/* "$SRC_DIR/rpcs3/3rdparty/" 2>/dev/null || true
           
           # Copy buildfiles (ConfigureCompiler.cmake etc.)
