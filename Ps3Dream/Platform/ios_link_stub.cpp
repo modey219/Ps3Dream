@@ -439,21 +439,6 @@ cfg_input_configurations g_cfg_input_configs;
 std::string g_input_config_override;
 
 // ---------------------------------------------------------------------------
-// AArch64 GHC frame preservation pass – from AArch64JIT.cpp which is not
-// compiled into the Emu library on iOS.  We need the exact class layout from
-// the real header for correct mangled name / ABI.
+// AArch64 GHC frame preservation pass is NOT referenced on iOS (the SPU
+// recompiler that uses it is not compiled).  No stubs needed.
 // ---------------------------------------------------------------------------
-#include "Emu/CPU/Backends/AArch64/AArch64JIT.h"
-
-aarch64::GHC_frame_preservation_pass::GHC_frame_preservation_pass(const config_t&) {}
-void aarch64::GHC_frame_preservation_pass::run(llvm::IRBuilder<>*, llvm::Function&) {}
-void aarch64::GHC_frame_preservation_pass::reset() {}
-void aarch64::GHC_frame_preservation_pass::force_tail_call_terminators(llvm::Function&) {}
-aarch64::GHC_frame_preservation_pass::function_info_t aarch64::GHC_frame_preservation_pass::preprocess_function(const llvm::Function&) { return {}; }
-aarch64::GHC_frame_preservation_pass::instruction_info_t aarch64::GHC_frame_preservation_pass::decode_instruction(const llvm::Function&, const llvm::Instruction*) { return {}; }
-bool aarch64::GHC_frame_preservation_pass::is_ret_instruction(const llvm::Instruction*) { return false; }
-bool aarch64::GHC_frame_preservation_pass::is_inlined_call(const llvm::CallInst*) { return false; }
-bool aarch64::GHC_frame_preservation_pass::is_faux_function(const std::string&) { return false; }
-aarch64::gpr aarch64::GHC_frame_preservation_pass::get_base_register_for_call(std::string_view, gpr def) { return def; }
-void aarch64::GHC_frame_preservation_pass::process_leaf_function(llvm::IRBuilder<>*, llvm::Function&) {}
-llvm::BasicBlock::iterator aarch64::GHC_frame_preservation_pass::patch_tail_call(llvm::IRBuilder<>*, llvm::Function&, llvm::BasicBlock::iterator where, const instruction_info_t&, const function_info_t&, const ASMBlock&) { return where; }
