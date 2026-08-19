@@ -994,6 +994,13 @@ jobs:
             echo "Patched bcdec.hpp to add default BGRA=false"
           fi
           
+          # Patch VMA API rename: vmaGetHeapBudgets → vmaGetBudget (newer VMA version)
+          VKMEMORY_CPP="$APS3E_CPP/rpcs3/rpcs3/Emu/RSX/VK/vkutils/memory.cpp"
+          if [ -f "$VKMEMORY_CPP" ]; then
+            sed -i '' 's/vmaGetHeapBudgets/vmaGetBudget/g' "$VKMEMORY_CPP"
+            echo "Patched memory.cpp: vmaGetHeapBudgets → vmaGetBudget"
+          fi
+          
           # Patch JIT.h
           if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
             TMPJIT=$(mktemp)
