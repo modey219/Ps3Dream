@@ -51,6 +51,7 @@ class EmulatorManager {
 
     private init() {
         setupCallbacks()
+        MemoryMonitor.shared.startMonitoring(interval: 3.0)
     }
 
     // MARK: - Callback Setup

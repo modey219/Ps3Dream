@@ -17,9 +17,11 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1</string>
+    <string>0.2</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>MinimumOSVersion</key>
+    <string>17.0</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>UILaunchScreen</key>
@@ -32,8 +34,20 @@
         <string>arm64</string>
         <string>metal</string>
     </array>
+    <key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer>
+        <integer>2</integer>
+    </array>
     <key>UISupportedInterfaceOrientations</key>
     <array>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
         <string>UIInterfaceOrientationLandscapeLeft</string>
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
@@ -43,6 +57,16 @@
     <true/>
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
+
+    <!-- Keep app alive in background for JIT survival -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>audio</string>
+    </array>
+
+    <!-- Local network for future RPCN multiplayer -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Ps3Dream uses the local network for multiplayer and game updates.</string>
 
     <!-- Camera access (for PS3 camera emulation) -->
     <key>NSCameraUsageDescription</key>

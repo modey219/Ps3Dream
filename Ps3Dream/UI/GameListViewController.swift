@@ -9,6 +9,7 @@ struct PS3Game {
     let name: String
     let iconPath: String?
     let gamePath: String
+    let hasOptimizedConfig: Bool
 }
 
 class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
@@ -39,6 +40,7 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
         ]
 
         setupDirectories()
+        PerGameConfigManager.shared.load()
         refreshGames()
     }
 
@@ -77,12 +79,13 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
                     let sfoPath = item.appendingPathComponent("PS3_GAME")
                         .appendingPathComponent("PARAM.SFO")
                     let name = readSFOTitle(sfoPath: sfoPath.path) ?? titleId
-                    games.append(PS3Game(titleId: titleId, name: name, iconPath: nil, gamePath: item.path))
+                    let config = PerGameConfigManager.shared.config(forTitleId: titleId)
+                    games.append(PS3Game(titleId: titleId, name: name, iconPath: nil, gamePath: item.path, hasOptimizedConfig: config.hasOptimizations))
                 }
             } else if item.pathExtension.lowercased() == "iso" ||
                         item.pathExtension.lowercased() == "bin" {
                 let name = item.deletingPathExtension().lastPathComponent
-                games.append(PS3Game(titleId: name, name: name, iconPath: nil, gamePath: item.path))
+                games.append(PS3Game(titleId: name, name: name, iconPath: nil, gamePath: item.path, hasOptimizedConfig: false))
             }
         }
 
@@ -287,7 +290,7 @@ class GameListViewController: UITableViewController, UIDocumentPickerDelegate {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: cellId, for: indexPath) as! GameCell
         let game = games[indexPath.row]
-        cell.configure(title: game.name, subtitle: game.titleId)
+        cell.configure(title: game.name, subtitle: game.titleId, hasConfig: game.hasOptimizedConfig)
         return cell
     }
 

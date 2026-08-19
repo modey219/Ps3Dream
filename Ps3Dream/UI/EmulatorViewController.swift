@@ -167,6 +167,15 @@ class EmulatorViewController: UIViewController {
     // MARK: - Emulation Control
 
     private func startEmulation() {
+        let config = PerGameConfigManager.shared.config(forTitleId: game.titleId)
+        let yaml = PerGameConfigManager.shared.configAsYAML(forTitleId: game.titleId)
+
+        if config.hasOptimizations {
+            print("[Emulator] Applying optimized config for \(game.titleId)")
+            let handle = ps3dream_config_open(yaml)
+            ps3dream_config_close(handle)
+        }
+
         ps3dream_boot_game(game.gamePath)
         ps3dream_boot()
     }

@@ -3,7 +3,6 @@
 <plist version="1.0">
 <dict>
     <!-- Allow JIT compilation (requires Developer Mode on iOS 17+) -->
-    <!-- This entitlement is automatically granted when Developer Mode is enabled -->
     <key>com.apple.security.cs.allow-jit</key>
     <true/>
 
@@ -19,8 +18,18 @@
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
 
-    <!-- App sandbox (set to false for full filesystem access needed by emulator) -->
+    <!-- App sandbox disabled for full filesystem access needed by emulator -->
     <key>com.apple.security.app-sandbox</key>
     <false/>
+
+    <!-- Raise memory limit (standard ~6GB → unlimited for RPCS3) -->
+    <!-- Note: increased-memory-limit requires Apple developer entitlement -->
+    <!-- <key>com.apple.developer.kernel.increased-memory-limit</key> -->
+    <!-- <true/> -->
+
+    <!-- Enable full 64-bit virtual address space (critical for JIT arena) -->
+    <!-- Note: extended-virtual-addressing requires Apple developer entitlement -->
+    <!-- <key>com.apple.developer.kernel.extended-virtual-addressing</key> -->
+    <!-- <true/> -->
 </dict>
 </plist>

@@ -60,11 +60,17 @@ class GameCell: UITableViewCell {
         ])
     }
 
-    func configure(title: String, subtitle: String) {
+    func configure(title: String, subtitle: String, hasConfig: Bool = false) {
         titleLabel.text = title
-        subtitleLabel.text = subtitle
+        if hasConfig {
+            subtitleLabel.text = "\(subtitle)  \u{2705} Optimized"
+            subtitleLabel.textColor = .systemGreen
+        } else {
+            subtitleLabel.text = subtitle
+            subtitleLabel.textColor = .secondaryLabel
+        }
         iconView.image = UIImage(systemName: "gamecontroller.fill")
-        iconView.tintColor = .systemBlue
-        iconView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.1)
+        iconView.tintColor = hasConfig ? .systemGreen : .systemBlue
+        iconView.backgroundColor = (hasConfig ? UIColor.systemGreen : UIColor.systemBlue).withAlphaComponent(0.1)
     }
 }

@@ -7,7 +7,7 @@ class SettingsViewController: UITableViewController {
 
     private let settings = AppSettings.shared
 
-    private let sections = ["General", "Video", "Audio", "Input", "About"]
+    private let sections = ["General", "Video", "Audio", "Input", "Device", "About"]
     private var items: [[String]] = []
 
     override func viewDidLoad() {
@@ -18,6 +18,10 @@ class SettingsViewController: UITableViewController {
     }
 
     private func rebuildItems() {
+        let memInfo = MemoryMonitor.shared.getCurrentInfo()
+        let totalMB = MemoryMonitor.deviceMemoryMB
+        let spuThreads = MemoryMonitor.recommendedSPUThreads
+
         items = [
             ["Enable JIT", "Developer Mode Required"],
             ["Renderer", settings.renderer.name],
@@ -25,7 +29,9 @@ class SettingsViewController: UITableViewController {
             ["Show FPS", settings.showFPS ? "ON" : "OFF"],
             ["Audio Backend", settings.audioBackend.name],
             ["Virtual Pad Opacity", "\(Int(settings.padOpacity * 100))%"],
-            ["Ps3Dream v0.1", "Based on RPCS3"],
+            ["Device RAM: \(totalMB) MB", "SPU Threads: \(spuThreads)"],
+            ["Config DB: \(PerGameConfigManager.shared.totalGames) games", "Auto-optimized per game"],
+            ["Ps3Dream v0.2", "Based on RPCS3"],
             ["Reset All Settings", ""]
         ]
     }
@@ -87,13 +93,14 @@ class SettingsViewController: UITableViewController {
             cell.selectionStyle = .default
 
         case (4, 0):
-            // About - show info
+            cell.selectionStyle = .none
+
+        case (5, 0):
             cell.accessoryType = .disclosureIndicator
             cell.selectionStyle = .default
 
-        case (4, 1):
-            // Reset settings
-            cell.textLabel?.textColor = .systemRed
+        case (5, 1):
+            cell.textColor = .systemRed
             cell.selectionStyle = .default
 
         default:
@@ -125,10 +132,10 @@ class SettingsViewController: UITableViewController {
         case (3, 0):
             showOpacityPicker()
 
-        case (4, 0):
+        case (5, 0):
             showAbout()
 
-        case (4, 1):
+        case (5, 1):
             resetSettings()
 
         default:
@@ -200,12 +207,19 @@ class SettingsViewController: UITableViewController {
     }
 
     private func showAbout() {
+        let memInfo = MemoryMonitor.shared.getCurrentInfo()
         let alert = UIAlertController(title: "Ps3Dream", message: """
-            PS3 Emulator for iOS
+            PS3 Emulator for iOS (A13+ / 3GB+ RAM)
             Based on RPCS3
             Using MoltenVK for Vulkan -> Metal
-            Requires iOS 17+ with Developer Mode
-
+            
+            Device: \(memInfo.totalRAMMB) MB RAM
+            Available: \(memInfo.availableRAMMB) MB
+            App Usage: \(memInfo.appUsedRAMMB) MB
+            
+            Config Database: \(PerGameConfigManager.shared.totalGames) games
+            Auto-optimized settings per game
+            
             RPCS3 Version: \(EmulatorManager.shared.rpcs3Version)
             GPU: \(EmulatorManager.shared.gpuInfo)
             CPU: \(EmulatorManager.shared.cpuInfo)
