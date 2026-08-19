@@ -1042,44 +1042,20 @@ jobs:
           }
           ALOGEOF
           
-          # Create minimal GL/glew.h stub (GLEW submodule is empty; OpenGL.h includes it on non-Windows)
+          # Create comprehensive GL/glew.h stub (GLEW submodule empty; OpenGL.h includes it on non-Windows)
+          # Use iOS SDK's OpenGL ES3 headers for real GL function declarations, add desktop-only extras
           mkdir -p "$APS3E_CPP/rpcs3/3rdparty/GLEW/include/GL"
           cat > "$APS3E_CPP/rpcs3/3rdparty/GLEW/include/GL/glew.h" << 'GLEWEOF'
           #pragma once
           #ifndef __glew_h__
           #define __glew_h__
-          #include <stdint.h>
-          #ifndef __gl_h_
-          #define __gl_h_
-          typedef unsigned int GLenum;
-          typedef unsigned char GLboolean;
-          typedef unsigned int GLbitfield;
-          typedef void GLvoid;
-          typedef signed char GLbyte;
-          typedef short GLshort;
-          typedef int GLint;
-          typedef unsigned char GLubyte;
-          typedef unsigned short GLushort;
-          typedef unsigned int GLuint;
-          typedef float GLfloat;
-          typedef float GLclampf;
-          typedef double GLdouble;
-          typedef double GLclampd;
-          typedef long GLsizei;
-          typedef long GLintptr;
-          typedef long GLsizeiptr;
-          typedef ptrdiff_t GLsizeiptrARB;
-          typedef ptrdiff_t GLintptrARB;
-          typedef char GLchar;
-          typedef unsigned long long GLuint64;
-          typedef long long GLint64;
-          typedef unsigned int GLsync;
-          struct __GLsync {};
-          #define GL_FALSE 0
-          #define GL_TRUE 1
+          #include <OpenGLES/ES3/gl.h>
+          #include <OpenGLES/ES3/glext.h>
+          #ifndef GL_NONE
+          #define GL_NONE 0
           #endif
-          #ifndef __glu_h__
-          #define __glu_h__
+          #ifndef GL_TEXTURE_BUFFER_BINDING
+          #define GL_TEXTURE_BUFFER_BINDING 0x8C2A
           #endif
           #define GLEW_OK 0
           #define GLEW_ERROR_NO_VERSION 1
