@@ -1632,12 +1632,13 @@ jobs:
           xcrun -sdk iphoneos clang -target arm64-apple-ios17.0 \
             -c Ps3Dream/Platform/ios_metal_stub.m -o "$APP_DIR/ios_metal_stub.o"
           xcrun -sdk iphoneos clang++ -target arm64-apple-ios17.0 -std=c++20 \
-            -DARCH_ARM64=1 -D'__API_UNAVAILABLE(...)=' \
+            -DARCH_ARM64=1 -DLLVM_AVAILABLE -D'__API_UNAVAILABLE(...)=' \
             -I"$SRC_DIR/rpcs3" \
             -I"$SRC_DIR/rpcs3/rpcs3" \
             -I"$SRC_DIR/rpcs3/rpcs3/Utilities" \
             -I"$SRC_DIR/rpcs3/rpcs3/3rdparty" \
             -I"$SRC_DIR/ffmpeg_stubs" \
+            -I"$GITHUB_WORKSPACE/llvm-ios-install/include" \
             -c Ps3Dream/Platform/ios_link_stub.cpp -o "$APP_DIR/ios_link_stub.o"
           
           # Collect all static libraries produced by the native build:
