@@ -1,8 +1,8 @@
 // ios_link_stub.cpp
 // Link-time stubs for symbols that librpcs3_emu.a references but whose source
 // TUs are not compiled on iOS (NP/upnp stack, PS Move tracker, USB emulated
-// devices, AArch64 CPU backend, etc.). All bodies are no-ops so the app still
-// links; the corresponding subsystems simply stay inert on iOS.
+// devices, AArch64 CPU backend, pad thread, etc.). All bodies are no-ops so
+// the app still links; the corresponding subsystems simply stay inert on iOS.
 
 #include <array>
 #include <chrono>
@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <cstdlib>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -33,9 +34,11 @@ using namespace std::literals;
 
 #include "Utilities/StrFmt.h"
 
+// ---------------------------------------------------------------------------
+// NP networking stubs (keep existing working stubs)
+// ---------------------------------------------------------------------------
 namespace np
 {
-	// Defined in Emu/NP/ip_address.h
 	enum class IPV6_SUPPORT : u8
 	{
 		IPV6_UNKNOWN,
@@ -272,6 +275,185 @@ struct spu_llvm_compile_context;
 void spu_llvm_set_compile_context(spu_llvm_compile_context*) noexcept {}
 
 // ---------------------------------------------------------------------------
-// Pad thread global
+// report_fatal_error – called by Thread.cpp emergency_exit.  In rpcs3 this
+// pops a Qt dialog; on iOS we just abort.
 // ---------------------------------------------------------------------------
-namespace pad { class pad_thread; pad_thread* g_pad_thread = nullptr; }
+[[noreturn]] void report_fatal_error(std::string_view, bool, bool)
+{
+	std::abort();
+}
+
+// ---------------------------------------------------------------------------
+// qt_events_aware_op – aps3e-specific Qt event-loop helper.  On iOS the Qt
+// event loop doesn't exist, so just run the operation inline.
+// ---------------------------------------------------------------------------
+void qt_events_aware_op(int, std::function<bool()> wrapped_op)
+{
+	if (wrapped_op)
+	{
+		while (!wrapped_op())
+		{
+			std::this_thread::yield();
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// USB device stubs – usb_device.cpp, usb_microphone.cpp, usb_vfs.cpp are
+// all stubbed to "// Stubbed for iOS" in the workflow.  We include the real
+// headers to get the correct class layout (vtables, typeinfo) and provide
+// no-op implementations.
+// ---------------------------------------------------------------------------
+#include "Emu/Io/usb_device.h"
+#include "Emu/Io/usb_microphone.h"
+#include "Emu/Io/usb_vfs.h"
+
+// -- usb_device --
+usb_device::usb_device(const std::array<u8, 7>& loc) : location(loc) {}
+void usb_device::get_location(u8* loc) const { if (loc) std::memcpy(loc, location.data(), 7); }
+void usb_device::read_descriptors() {}
+u32 usb_device::get_configuration(u8* buf) { if (buf) *buf = current_config; return 0; }
+bool usb_device::set_configuration(u8 cfg) { current_config = cfg; return true; }
+bool usb_device::set_interface(u8 int_num, u8 alt) { current_interface = int_num; current_altsetting = alt; return true; }
+const UsbDeviceEndpoint* usb_device::find_endpoint(u8) const { return nullptr; }
+u64 usb_device::get_timestamp() { return 0; }
+
+// -- usb_device_passthrough (referenced indirectly through vtable) --
+usb_device_passthrough::usb_device_passthrough(libusb_device*, libusb_device_descriptor&, const std::array<u8, 7>& loc) : usb_device(loc) {}
+usb_device_passthrough::~usb_device_passthrough() {}
+bool usb_device_passthrough::open_device() { return false; }
+void usb_device_passthrough::read_descriptors() {}
+u32 usb_device_passthrough::get_configuration(u8* buf) { return usb_device::get_configuration(buf); }
+bool usb_device_passthrough::set_configuration(u8 cfg) { return usb_device::set_configuration(cfg); }
+bool usb_device_passthrough::set_interface(u8 int_num, u8 alt) { return usb_device::set_interface(int_num, alt); }
+void usb_device_passthrough::control_transfer(u8, u8, u16, u16, u16, u32, u8*, UsbTransfer*) {}
+void usb_device_passthrough::interrupt_transfer(u32, u8*, u32, UsbTransfer*) {}
+void usb_device_passthrough::isochronous_transfer(UsbTransfer*) {}
+void usb_device_passthrough::send_libusb_transfer(libusb_transfer*) {}
+void usb_device_passthrough::patch_descriptors() {}
+
+// -- usb_device_emulated --
+usb_device_emulated::usb_device_emulated(const std::array<u8, 7>& loc) : usb_device(loc) {}
+usb_device_emulated::usb_device_emulated(const UsbDeviceDescriptor&, const std::array<u8, 7>& loc) : usb_device(loc) {}
+bool usb_device_emulated::open_device() { return true; }
+void usb_device_emulated::control_transfer(u8, u8, u16, u16, u16, u32, u8*, UsbTransfer*) {}
+void usb_device_emulated::interrupt_transfer(u32, u8*, u32, UsbTransfer*) {}
+void usb_device_emulated::isochronous_transfer(UsbTransfer*) {}
+void usb_device_emulated::add_string(std::string str) { strings.push_back(std::move(str)); }
+u32 usb_device_emulated::get_descriptor(u8, u8, u8*, u32) { return 0; }
+u32 usb_device_emulated::get_status(bool, bool, u8*, u32) { return 0; }
+
+// -- usb_device_mic --
+usb_device_mic::usb_device_mic(u32, const std::array<u8, 7>& loc, MicType) : usb_device_emulated(loc) {}
+std::shared_ptr<usb_device> usb_device_mic::make_singstar(u32, const std::array<u8, 7>&) { return {}; }
+std::shared_ptr<usb_device> usb_device_mic::make_logitech(u32, const std::array<u8, 7>&) { return {}; }
+std::shared_ptr<usb_device> usb_device_mic::make_rocksmith(u32, const std::array<u8, 7>&) { return {}; }
+u16 usb_device_mic::get_num_emu_devices() { return 0; }
+void usb_device_mic::control_transfer(u8, u8, u16, u16, u16, u32, u8*, UsbTransfer*) {}
+void usb_device_mic::isochronous_transfer(UsbTransfer*) {}
+
+// -- usb_device_vfs --
+usb_device_vfs::usb_device_vfs(const cfg::device_info&, const std::array<u8, 7>& loc) : usb_device_emulated(loc) {}
+usb_device_vfs::~usb_device_vfs() {}
+
+// ---------------------------------------------------------------------------
+// PS Move tracker – defined in rpcs3/Input/ which is not part of librpcs3_emu.
+// We include the real header for correct ABI and provide no-op implementations.
+// ---------------------------------------------------------------------------
+#include "Input/ps_move_tracker.h"
+
+template <>
+ps_move_tracker<false>::ps_move_tracker() {}
+template <>
+ps_move_tracker<false>::~ps_move_tracker() {}
+template <>
+void ps_move_tracker<false>::set_image_data(const void*, u64, u32, u32, s32) {}
+template <>
+void ps_move_tracker<false>::init_workers() {}
+template <>
+void ps_move_tracker<false>::process_image() {}
+template <>
+void ps_move_tracker<false>::convert_image(s32) {}
+template <>
+void ps_move_tracker<false>::process_hues() {}
+template <>
+void ps_move_tracker<false>::process_contours(ps_move_info&, u32) {}
+template <>
+void ps_move_tracker<false>::set_active(u32, bool) {}
+template <>
+void ps_move_tracker<false>::set_hue(u32, u16) {}
+template <>
+void ps_move_tracker<false>::set_hue_threshold(u32, u16) {}
+template <>
+void ps_move_tracker<false>::set_saturation_threshold(u32, u16) {}
+template <>
+void ps_move_tracker<false>::set_valid(ps_move_info&, u32, bool) {}
+template <>
+void ps_move_tracker<false>::draw_sphere_size_range(f32) {}
+template <>
+std::tuple<u8, u8, u8> ps_move_tracker<false>::hsv_to_rgb(u16, f32, f32) { return {0, 0, 0}; }
+template <>
+std::tuple<s16, f32, f32> ps_move_tracker<false>::rgb_to_hsv(f32, f32, f32) { return {0, 0.0f, 0.0f}; }
+
+// ---------------------------------------------------------------------------
+// Pad thread – defined in rpcs3/Input/ which is not part of librpcs3_emu.
+// Include real header for correct ABI.
+// ---------------------------------------------------------------------------
+#include "Input/pad_thread.h"
+
+pad_thread::pad_thread(void*, void*, std::string_view) {}
+pad_thread::~pad_thread() {}
+void pad_thread::operator()() {}
+void pad_thread::SetIntercepted(bool) {}
+s32 pad_thread::AddLddPad() { return 0; }
+void pad_thread::UnregisterLddPad(u32) {}
+void pad_thread::SetRumble(u32, u8, u8) {}
+void pad_thread::open_home_menu() {}
+void pad_thread::Init() {}
+void pad_thread::InitLddPad(u32, const u32*) {}
+void pad_thread::apply_copilots() {}
+void pad_thread::update_pad_states() {}
+std::shared_ptr<PadHandlerBase> pad_thread::GetHandler(pad_handler) { return {}; }
+void pad_thread::InitPadConfig(cfg_pad&, pad_handler, std::shared_ptr<PadHandlerBase>&) {}
+
+// ---------------------------------------------------------------------------
+// Pad globals
+// ---------------------------------------------------------------------------
+namespace pad
+{
+	shared_mutex g_pad_mutex;
+	atomic_t<pad_thread*> g_pad_thread{nullptr};
+	std::string g_title_id;
+	atomic_t<bool> g_enabled{true};
+	atomic_t<bool> g_reset{false};
+	atomic_t<bool> g_started{false};
+	atomic_t<bool> g_home_menu_requested{false};
+}
+
+// ---------------------------------------------------------------------------
+// Input config globals – defined in rpcs3qt files not compiled on iOS.
+// ---------------------------------------------------------------------------
+#include "Emu/Io/pad_config.h"
+
+cfg_input_configurations g_cfg_input_configs;
+std::string g_input_config_override;
+
+// ---------------------------------------------------------------------------
+// AArch64 GHC frame preservation pass – from AArch64JIT.cpp which is not
+// compiled into the Emu library on iOS.  We need the exact class layout from
+// the real header for correct mangled name / ABI.
+// ---------------------------------------------------------------------------
+#include "Emu/CPU/Backends/AArch64/AArch64JIT.h"
+
+aarch64::GHC_frame_preservation_pass::GHC_frame_preservation_pass(const config_t&) {}
+void aarch64::GHC_frame_preservation_pass::run(llvm::IRBuilder<>*, llvm::Function&) {}
+void aarch64::GHC_frame_preservation_pass::reset() {}
+void aarch64::GHC_frame_preservation_pass::force_tail_call_terminators(llvm::Function&) {}
+aarch64::GHC_frame_preservation_pass::function_info_t aarch64::GHC_frame_preservation_pass::preprocess_function(const llvm::Function&) { return {}; }
+aarch64::GHC_frame_preservation_pass::instruction_info_t aarch64::GHC_frame_preservation_pass::decode_instruction(const llvm::Function&, const llvm::Instruction*) { return {}; }
+bool aarch64::GHC_frame_preservation_pass::is_ret_instruction(const llvm::Instruction*) { return false; }
+bool aarch64::GHC_frame_preservation_pass::is_inlined_call(const llvm::CallInst*) { return false; }
+bool aarch64::GHC_frame_preservation_pass::is_faux_function(const std::string&) { return false; }
+aarch64::gpr aarch64::GHC_frame_preservation_pass::get_base_register_for_call(std::string_view, gpr def) { return def; }
+void aarch64::GHC_frame_preservation_pass::process_leaf_function(llvm::IRBuilder<>*, llvm::Function&) {}
+llvm::BasicBlock::iterator aarch64::GHC_frame_preservation_pass::patch_tail_call(llvm::IRBuilder<>*, llvm::Function&, llvm::BasicBlock::iterator where, const instruction_info_t&, const function_info_t&, const ASMBlock&) { return where; }

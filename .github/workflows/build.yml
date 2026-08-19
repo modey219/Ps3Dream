@@ -1638,6 +1638,7 @@ jobs:
             -I"$SRC_DIR/rpcs3/rpcs3/Utilities" \
             -I"$SRC_DIR/rpcs3/rpcs3/3rdparty" \
             -I"$SRC_DIR/ffmpeg_stubs" \
+            -I"$GITHUB_WORKSPACE/llvm-ios-install/include" \
             -c Ps3Dream/Platform/ios_link_stub.cpp -o "$APP_DIR/ios_link_stub.o"
           
           # Collect all static libraries produced by the native build:
