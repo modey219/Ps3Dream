@@ -605,3 +605,24 @@ const char* ps3dream_get_version(void) {
 void ps3dream_set_log_callback(Ps3DreamLogCallback callback) { g_log_callback = callback; }
 void ps3dream_set_status_callback(Ps3DreamStatusCallback callback) { g_status_callback = callback; }
 void ps3dream_set_frame_callback(Ps3DreamFrameCallback callback) { g_frame_callback = callback; }
+
+// Config functions – stub implementations. The per-game config is handled
+// in Swift (PerGameConfig.swift); these exist to satisfy the bridge API.
+long ps3dream_config_open(const char* config_str) {
+    (void)config_str;
+    return 0;
+}
+
+const char* ps3dream_config_close(long handle) {
+    (void)handle;
+    return "";
+}
+
+const char* ps3dream_config_load(long handle, const char* tag) {
+    (void)handle; (void)tag;
+    return "";
+}
+
+void ps3dream_config_save(long handle, const char* tag, const char* value) {
+    (void)handle; (void)tag; (void)value;
+}

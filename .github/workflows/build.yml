@@ -960,6 +960,10 @@ jobs:
             sed -i '' '/RB3MidiKeyboard\.cpp/d; /RB3MidiGuitar\.cpp/d' "$EMU_CMAKE"
             # Remove CgBinaryProgram.cpp (includes GLVertexProgram.h which pulls in desktop GL headers not available on iOS)
             sed -i '' '/CgBinaryProgram\.cpp/d' "$EMU_CMAKE"
+            # Remove overlay dialogs that reference RPCN (not compiled on iOS)
+            sed -i '' '/overlay_friends_list_dialog\.cpp/d; /overlay_sendmessage_dialog\.cpp/d; /overlay_recvmessage_dialog\.cpp/d' "$EMU_CMAKE"
+            # Remove mouse_config.cpp (references g_cfg_mouse/rpcn globals)
+            sed -i '' '/mouse_config\.cpp/d' "$EMU_CMAKE"
             echo "Patched Emu/CMakeLists.txt to remove NP sources and unsupported modules"
           fi
           
