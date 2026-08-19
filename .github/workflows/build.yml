@@ -996,12 +996,7 @@ jobs:
             echo "Patched bcdec.hpp to add default BGRA=false"
           fi
           
-          # Patch VMA API rename: vmaGetHeapBudgets → vmaGetBudget (newer VMA version)
-          VKMEMORY_CPP="$SRC_DIR/rpcs3/rpcs3/Emu/RSX/VK/vkutils/memory.cpp"
-          if [ -f "$VKMEMORY_CPP" ]; then
-            sed -i '' 's/vmaGetHeapBudgets/vmaGetBudget/g' "$VKMEMORY_CPP"
-            echo "Patched memory.cpp: vmaGetHeapBudgets → vmaGetBudget"
-          fi
+          # VMA API: vmaGetHeapBudgets exists in VMA master, no rename needed
           
           # Patch metal_layer.mm: use UIKit instead of AppKit on iOS
           METAL_LAYER="$SRC_DIR/rpcs3/rpcs3/Emu/RSX/VK/vkutils/metal_layer.mm"
