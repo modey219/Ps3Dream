@@ -25,7 +25,7 @@ class SettingsViewController: UITableViewController {
             ["Show FPS", settings.showFPS ? "ON" : "OFF"],
             ["Audio Backend", settings.audioBackend.name],
             ["Virtual Pad Opacity", "\(Int(settings.padOpacity * 100))%"],
-            ["Ps3Dream v0.1", "Based on RPCS3 + APS3E"],
+            ["Ps3Dream v0.1", "Based on RPCS3"],
             ["Reset All Settings", ""]
         ]
     }
@@ -202,7 +202,7 @@ class SettingsViewController: UITableViewController {
     private func showAbout() {
         let alert = UIAlertController(title: "Ps3Dream", message: """
             PS3 Emulator for iOS
-            Based on RPCS3 + APS3E Android
+            Based on RPCS3
             Using MoltenVK for Vulkan -> Metal
             Requires iOS 17+ with Developer Mode
 

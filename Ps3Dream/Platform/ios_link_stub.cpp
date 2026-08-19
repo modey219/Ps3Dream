@@ -4,7 +4,7 @@
 // devices, AArch64 CPU backend, etc.). All bodies are no-ops so the app still
 // links; the corresponding subsystems simply stay inert on iOS.
 //
-// The rpcs3 source root ($APS3E_CPP/rpcs3/rpcs3) and Utilities/3rdparty
+// The rpcs3 source root and Utilities/3rdparty
 // include paths must be on the clang++ include path (see build.yml).
 
 #include <array>
@@ -32,10 +32,6 @@ using namespace std::literals;
 #include "Emu/Cell/Modules/sceNp.h"
 #include "Emu/Cell/Modules/sceNpTrophy.h"
 
-#include "Emu/Cell/lv2/sys_net/ip_address.h"
-#include "Emu/Cell/lv2/sys_net/np_dnshook.h"
-#include "Emu/Cell/lv2/sys_net/signaling_handler.h"
-
 #include "Emu/Io/ps_move_tracker.h"
 #include "Emu/Io/usb_device.h"
 #include "Emu/Io/usb_microphone.h"
@@ -43,6 +39,47 @@ using namespace std::literals;
 #include "Emu/CPU/AArch64/AArch64Signal.h"
 
 #include "Utilities/StrFmt.h"
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <optional>
+
+// Forward declarations for types from non-compiled networking TUs
+enum class socket_type : int {};
+enum class IPV6_SUPPORT : int { DISABLED = 0, ENABLED = 1 };
+enum class thread_state : int {};
+struct ucontext_t;
+
+namespace np
+{
+	void close_socket(socket_type socket);
+	void set_socket_non_blocking(socket_type socket);
+	bool is_ipv6_supported(std::optional<IPV6_SUPPORT> force_state);
+	s32 sendto_possibly_ipv6(socket_type native_socket, const char* data, u32 size, const sockaddr_in* addr, int native_flags);
+	sockaddr_in6 sockaddr_to_sockaddr6(const sockaddr_in& addr);
+	sockaddr_in sockaddr6_to_sockaddr(const sockaddr_in6& addr);
+
+	class dnshook
+	{
+	public:
+		dnshook();
+		void add_dns_spy(u32 sock);
+		void remove_dns_spy(u32 sock);
+		bool is_dns(u32 sock);
+		bool is_dns_queue(u32 sock);
+		std::vector<u8> get_dns_packet(u32 sock);
+		s32 analyze_dns_packet(s32 s, const u8* buf, u32 len);
+	};
+}
+
+class signaling_handler
+{
+public:
+	signaling_handler();
+	void operator()();
+	void wake_up();
+	signaling_handler& operator=(thread_state);
+};
 
 // ---------------------------------------------------------------------------
 // Removed HLE module registrations (empty module bodies).

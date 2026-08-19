@@ -1,5 +1,4 @@
 // Ps3Dream iOS - Core Emulator Bridge (Objective-C++)
-// Replaces Android JNI bridge (emulator.cpp, aps3e.cpp, aps3e_emu.cpp)
 //
 // This file provides the C interface that Swift/Objective-C code can call,
 // and bridges to the RPCS3 C++ emulator core.
@@ -27,7 +26,6 @@
 #include <mutex>
 
 // Forward declarations for RPCS3 types we need
-// These match the declarations in aps3e_rp3_impl.h
 #include "ps3dream_emulator.hpp"
 
 #endif

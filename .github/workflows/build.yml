@@ -140,36 +140,37 @@ jobs:
 
       - name: Prepare source tree
         run: |
-          APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
+          SRC_DIR=build_src
+          mkdir -p "$SRC_DIR/rpcs3"
           
           # Copy rpcs3 root CMakeLists.txt
-          cp rpcs3_build/CMakeLists.txt "$APS3E_CPP/rpcs3/CMakeLists.txt"
+          cp rpcs3_build/CMakeLists.txt "$SRC_DIR/rpcs3/CMakeLists.txt"
           
           # Copy rpcs3 core source
-          rm -rf "$APS3E_CPP/rpcs3/rpcs3"
-          cp -r rpcs3_build/rpcs3 "$APS3E_CPP/rpcs3/rpcs3"
+          rm -rf "$SRC_DIR/rpcs3/rpcs3"
+          cp -r rpcs3_build/rpcs3 "$SRC_DIR/rpcs3/rpcs3"
           
           # Copy 3rdparty from rpcs3
-          cp -rn rpcs3_build/3rdparty/* "$APS3E_CPP/rpcs3/3rdparty/" 2>/dev/null || true
+          cp -rn rpcs3_build/3rdparty/* "$SRC_DIR/rpcs3/3rdparty/" 2>/dev/null || true
           
           # Copy buildfiles (ConfigureCompiler.cmake etc.)
-          cp -r rpcs3_build/buildfiles "$APS3E_CPP/rpcs3/" 2>/dev/null || true
+          cp -r rpcs3_build/buildfiles "$SRC_DIR/rpcs3/" 2>/dev/null || true
           
           # Copy all root-level dirs that rpcs3 source may reference
           for d in Utilities darwin; do
             if [ -d "rpcs3_build/$d" ]; then
-              cp -r "rpcs3_build/$d" "$APS3E_CPP/rpcs3/"
+              cp -r "rpcs3_build/$d" "$SRC_DIR/rpcs3/"
             fi
           done
           
           # Create stub dirs for missing dependencies
-          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/libadrenotools"
-          echo "add_library(adrenotools INTERFACE)" > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/CMakeLists.txt"
-          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/include/adrenotools"
-          cat > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/include/adrenotools/priv.h" << 'ADREOF'
+          mkdir -p "$SRC_DIR/rpcs3/3rdparty/libadrenotools"
+          echo "add_library(adrenotools INTERFACE)" > "$SRC_DIR/rpcs3/3rdparty/libadrenotools/CMakeLists.txt"
+          mkdir -p "$SRC_DIR/rpcs3/3rdparty/libadrenotools/include/adrenotools"
+          cat > "$SRC_DIR/rpcs3/3rdparty/libadrenotools/include/adrenotools/priv.h" << 'ADREOF'
           #pragma once
           ADREOF
-          cat > "$APS3E_CPP/rpcs3/3rdparty/libadrenotools/include/adrenotools/driver.h" << 'ADREOF2'
+          cat > "$SRC_DIR/rpcs3/3rdparty/libadrenotools/include/adrenotools/driver.h" << 'ADREOF2'
           #pragma once
           #include <dlfcn.h>
           #define ADRENOTOOLS_DRIVER_CUSTOM 1
@@ -180,33 +181,33 @@ jobs:
           ADREOF2
           
           # Download Vulkan Memory Allocator header
-          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/VulkanMemoryAllocator/include"
-          curl -L -o "$APS3E_CPP/rpcs3/3rdparty/VulkanMemoryAllocator/include/vk_mem_alloc.h" \
+          mkdir -p "$SRC_DIR/rpcs3/3rdparty/VulkanMemoryAllocator/include"
+          curl -L -o "$SRC_DIR/rpcs3/3rdparty/VulkanMemoryAllocator/include/vk_mem_alloc.h" \
             "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/master/include/vk_mem_alloc.h"
-          ls -la "$APS3E_CPP/rpcs3/3rdparty/VulkanMemoryAllocator/include/vk_mem_alloc.h"
+          ls -la "$SRC_DIR/rpcs3/3rdparty/VulkanMemoryAllocator/include/vk_mem_alloc.h"
           
-          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial"
-          cat > "$APS3E_CPP/rpcs3/3rdparty/xxHash/cmake_unofficial/CMakeLists.txt" << 'EOF'
+          mkdir -p "$SRC_DIR/rpcs3/3rdparty/xxHash/cmake_unofficial"
+          cat > "$SRC_DIR/rpcs3/3rdparty/xxHash/cmake_unofficial/CMakeLists.txt" << 'EOF'
           add_library(xxhash INTERFACE)
           target_include_directories(xxhash INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/..)
           EOF
-          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/xxHash"
-          touch "$APS3E_CPP/rpcs3/3rdparty/xxHash/xxhash.h"
+          mkdir -p "$SRC_DIR/rpcs3/3rdparty/xxHash"
+          touch "$SRC_DIR/rpcs3/3rdparty/xxHash/xxhash.h"
           
           # Delete rpcs3's custom FindZLIB.cmake
-          rm -f "$APS3E_CPP/rpcs3/buildfiles/cmake/FindZLIB.cmake"
+          rm -f "$SRC_DIR/rpcs3/buildfiles/cmake/FindZLIB.cmake"
           
           # Create stub ffmpeg headers
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/libavutil" \
-                   "$APS3E_CPP/ffmpeg_stubs/libavcodec" \
-                   "$APS3E_CPP/ffmpeg_stubs/libavformat" \
-                   "$APS3E_CPP/ffmpeg_stubs/libswscale" \
-                   "$APS3E_CPP/ffmpeg_stubs/libswresample"
+          mkdir -p "$SRC_DIR/ffmpeg_stubs/libavutil" \
+                   "$SRC_DIR/ffmpeg_stubs/libavcodec" \
+                   "$SRC_DIR/ffmpeg_stubs/libavformat" \
+                   "$SRC_DIR/ffmpeg_stubs/libswscale" \
+                   "$SRC_DIR/ffmpeg_stubs/libswresample"
           
           # Create a single comprehensive ffmpeg stub header that defines everything
           # rpcs3's media_utils.cpp uses modern ffmpeg 7.x APIs - easier to have one
           # monolithic header than play whack-a-mole with individual headers
-          FDIR="$APS3E_CPP/ffmpeg_stubs"
+          FDIR="$SRC_DIR/ffmpeg_stubs"
           mkdir -p "$FDIR/libavcodec" "$FDIR/libavformat" "$FDIR/libavutil" \
                    "$FDIR/libswscale" "$FDIR/libswresample"
           
@@ -609,7 +610,7 @@ jobs:
           echo "Created comprehensive ffmpeg stub headers"
           
           # Create stub libusb.h (comprehensive types needed by rpcs3)
-          cat > "$APS3E_CPP/ffmpeg_stubs/libusb.h" << 'LIBUSB_EOF'
+          cat > "$SRC_DIR/ffmpeg_stubs/libusb.h" << 'LIBUSB_EOF'
           #pragma once
           #include <stdint.h>
           #include <stddef.h>
@@ -733,8 +734,8 @@ jobs:
           LIBUSB_EOF
           
           # Create stub curl header
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/curl"
-          cat > "$APS3E_CPP/ffmpeg_stubs/curl/curl.h" << 'CURLEOF'
+          mkdir -p "$SRC_DIR/ffmpeg_stubs/curl"
+          cat > "$SRC_DIR/ffmpeg_stubs/curl/curl.h" << 'CURLEOF'
           #pragma once
           typedef void CURL;
           typedef int CURLcode;
@@ -759,8 +760,8 @@ jobs:
           static inline CURLM* curl_multi_init(void){return 0;}
           static inline CURLMcode curl_multi_cleanup(CURLM* m){(void)m;return 0;}
           CURLEOF
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/wolfssl"
-          cat > "$APS3E_CPP/ffmpeg_stubs/wolfssl/ssl.h" << 'WOLFEOF'
+          mkdir -p "$SRC_DIR/ffmpeg_stubs/wolfssl"
+          cat > "$SRC_DIR/ffmpeg_stubs/wolfssl/ssl.h" << 'WOLFEOF'
           #pragma once
           typedef struct WOLFSSL WOLFSSL;
           typedef struct WOLFSSL_CTX WOLFSSL_CTX;
@@ -781,11 +782,11 @@ jobs:
           WOLFSSL_METHOD* wolfTLSv1_3_client_method(void){return 0;}
           WOLFEOF
           
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/libusb-1.0"
-          cp "$APS3E_CPP/ffmpeg_stubs/libusb.h" "$APS3E_CPP/ffmpeg_stubs/libusb-1.0/libusb.h"
+          mkdir -p "$SRC_DIR/ffmpeg_stubs/libusb-1.0"
+          cp "$SRC_DIR/ffmpeg_stubs/libusb.h" "$SRC_DIR/ffmpeg_stubs/libusb-1.0/libusb.h"
           
           # Create stub OpenAL headers
-          cat > "$APS3E_CPP/ffmpeg_stubs/al.h" << 'ALEOF'
+          cat > "$SRC_DIR/ffmpeg_stubs/al.h" << 'ALEOF'
           #pragma once
           typedef int ALenum;
           typedef int ALint;
@@ -817,7 +818,7 @@ jobs:
           static inline ALenum alGetError(void){return 0;}
           ALEOF
           
-          cat > "$APS3E_CPP/ffmpeg_stubs/alc.h" << 'ALCEOF'
+          cat > "$SRC_DIR/ffmpeg_stubs/alc.h" << 'ALCEOF'
           #pragma once
           #include "al.h"
           typedef void ALCdevice;
@@ -850,21 +851,21 @@ jobs:
           static inline void alcGetIntegerv(ALCdevice *d,ALCenum p,ALCsizei s,ALCint *v){(void)d;(void)p;(void)s;(void)v;}
           ALCEOF
           
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/alext.h"
+          echo '#pragma once' > "$SRC_DIR/ffmpeg_stubs/alext.h"
           
           # Create AL/ subdirectory for <AL/al.h>, <AL/alc.h>, <AL/alext.h> includes
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/AL"
-          cp "$APS3E_CPP/ffmpeg_stubs/al.h" "$APS3E_CPP/ffmpeg_stubs/AL/al.h"
-          cp "$APS3E_CPP/ffmpeg_stubs/alc.h" "$APS3E_CPP/ffmpeg_stubs/AL/alc.h"
-          cp "$APS3E_CPP/ffmpeg_stubs/alext.h" "$APS3E_CPP/ffmpeg_stubs/AL/alext.h"
-          cat > "$APS3E_CPP/ffmpeg_stubs/AL/alext.h" << 'ALEXT2'
+          mkdir -p "$SRC_DIR/ffmpeg_stubs/AL"
+          cp "$SRC_DIR/ffmpeg_stubs/al.h" "$SRC_DIR/ffmpeg_stubs/AL/al.h"
+          cp "$SRC_DIR/ffmpeg_stubs/alc.h" "$SRC_DIR/ffmpeg_stubs/AL/alc.h"
+          cp "$SRC_DIR/ffmpeg_stubs/alext.h" "$SRC_DIR/ffmpeg_stubs/AL/alext.h"
+          cat > "$SRC_DIR/ffmpeg_stubs/AL/alext.h" << 'ALEXT2'
           #pragma once
           #include "al.h"
           #include "alc.h"
           ALEXT2
           
           # Create stub rtmidi
-          cat > "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" << 'RTMIDI'
+          cat > "$SRC_DIR/ffmpeg_stubs/rtmidi_c.h" << 'RTMIDI'
           #pragma once
           typedef int RtMidiApi;
           typedef void (*RtMidiCallback)(double, const unsigned char*, size_t, void*);
@@ -887,15 +888,15 @@ jobs:
           static inline RtMidiApi rtmidi_in_get_current_api(void *p){(void)p;return 0;}
           static inline double rtmidi_in_get_message(void *p, const unsigned char **m, size_t *s){(void)p;(void)m;(void)s;return 0.0;}
           RTMIDI
-          cp "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" "$APS3E_CPP/ffmpeg_stubs/rtmidi.h"
+          cp "$SRC_DIR/ffmpeg_stubs/rtmidi_c.h" "$SRC_DIR/ffmpeg_stubs/rtmidi.h"
           
           # Stub/delete files that can't compile on iOS (rtmidi submodule not available, etc.)
-          for stubfile in "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiKeyboard.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiGuitar.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/RB3MidiDrums.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_device.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_microphone.cpp" \
-                          "$APS3E_CPP/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp"; do
+          for stubfile in "$SRC_DIR/rpcs3/rpcs3/Emu/Io/RB3MidiKeyboard.cpp" \
+                          "$SRC_DIR/rpcs3/rpcs3/Emu/Io/RB3MidiGuitar.cpp" \
+                          "$SRC_DIR/rpcs3/rpcs3/Emu/Io/RB3MidiDrums.cpp" \
+                          "$SRC_DIR/rpcs3/rpcs3/Emu/Io/usb_device.cpp" \
+                          "$SRC_DIR/rpcs3/rpcs3/Emu/Io/usb_microphone.cpp" \
+                          "$SRC_DIR/rpcs3/rpcs3/Emu/Io/usb_vfs.cpp"; do
             if [ -f "$stubfile" ]; then
               echo '// Stubbed for iOS' > "$stubfile"
             fi
@@ -904,7 +905,7 @@ jobs:
           # but copy our rtmidi_c.h stub so the transitive include resolves
           
           # Patch sys_usbd.cpp: comment out all RB3Midi references
-          SYS_USBD="$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/lv2/sys_usbd.cpp"
+          SYS_USBD="$SRC_DIR/rpcs3/rpcs3/Emu/Cell/lv2/sys_usbd.cpp"
           if [ -f "$SYS_USBD" ]; then
             sed -i '' '/#include.*RB3Midi/d' "$SYS_USBD"
             sed -i '' '/new usb_device_rb3_midi/d' "$SYS_USBD"
@@ -913,27 +914,27 @@ jobs:
             sed -i '' '/usb_device_rb3_midi_drums/d' "$SYS_USBD"
           fi
           # Also overwrite the 3rdparty rtmidi_c.h with our stub
-          for rtpath in "$APS3E_CPP/rpcs3/3rdparty/rtmidi/rtmidi/rtmidi_c.h" \
-                         "$APS3E_CPP/rpcs3_build/3rdparty/rtmidi/rtmidi/rtmidi_c.h"; do
+          for rtpath in "$SRC_DIR/rpcs3/3rdparty/rtmidi/rtmidi/rtmidi_c.h" \
+                         "rpcs3_build/3rdparty/rtmidi/rtmidi/rtmidi_c.h"; do
             if [ -f "$rtpath" ]; then
-              cp "$APS3E_CPP/ffmpeg_stubs/rtmidi_c.h" "$rtpath"
+              cp "$SRC_DIR/ffmpeg_stubs/rtmidi_c.h" "$rtpath"
             fi
           done
           
           # Patch swapchain_macos.hpp: cast void* to const CAMetalLayer*
-          SWAPCHAIN="$APS3E_CPP/rpcs3/rpcs3/Emu/RSX/VK/vkutils/swapchain_macos.hpp"
+          SWAPCHAIN="$SRC_DIR/rpcs3/rpcs3/Emu/RSX/VK/vkutils/swapchain_macos.hpp"
           if [ -f "$SWAPCHAIN" ]; then
             perl -i -pe 's/(createInfo\.pLayer\s*=\s*)(GetCAMetalLayerFromMetalView)/\1(const CAMetalLayer *)\2/g' "$SWAPCHAIN"
             echo "Patched swapchain_macos.hpp: added CAMetalLayer cast"
           fi
           
           # Patch libusb os.cmake
-          if [ -f "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake" ]; then
-            sed -i '' 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$APS3E_CPP/rpcs3/3rdparty/libusb/os.cmake"
+          if [ -f "$SRC_DIR/rpcs3/3rdparty/libusb/os.cmake" ]; then
+            sed -i '' 's/message(FATAL_ERROR "Unsupported platform/message(WARNING "Unsupported platform/' "$SRC_DIR/rpcs3/3rdparty/libusb/os.cmake"
           fi
           
           # Patch SoundTouch: replace throw with std::terminate since rpcs3 disables exceptions
-          ST_TYPES="$APS3E_CPP/rpcs3/3rdparty/SoundTouch/soundtouch/include/STTypes.h"
+          ST_TYPES="$SRC_DIR/rpcs3/3rdparty/SoundTouch/soundtouch/include/STTypes.h"
           if [ -f "$ST_TYPES" ]; then
             # rpcs3 builds with -fno-exceptions, so replace the throw with std::terminate().
             # The #else branch only includes <stdexcept>/<string>; std::terminate lives in <exception>.
@@ -942,7 +943,7 @@ jobs:
           fi
           
           # Patch Emu/CMakeLists.txt - remove NP sources (need protobuf, curl, wolfssl)
-          EMU_CMAKE="$APS3E_CPP/rpcs3/rpcs3/Emu/CMakeLists.txt"
+          EMU_CMAKE="$SRC_DIR/rpcs3/rpcs3/Emu/CMakeLists.txt"
           if [ -f "$EMU_CMAKE" ]; then
             # Remove only the NP sources block (lines between "# Np" and its
             # closing ")"). The block ends at the FIRST line that is exactly
@@ -962,7 +963,7 @@ jobs:
           fi
           
           # Remove -Werror flags
-          for f in "$APS3E_CPP/rpcs3/rpcs3/CMakeLists.txt" "$APS3E_CPP/rpcs3/Utilities/CMakeLists.txt"; do
+          for f in "$SRC_DIR/rpcs3/rpcs3/CMakeLists.txt" "$SRC_DIR/rpcs3/Utilities/CMakeLists.txt"; do
             if [ -f "$f" ]; then
               sed -i '' 's/-Werror=return-type//g; s/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g' "$f"
             fi
@@ -970,39 +971,39 @@ jobs:
           
           # Patch unzip.cpp / serialization_ext.cpp: const_cast to satisfy z_stream.next_in
           # even if ZLIB_CONST propagation fails to reach these compilation units.
-          UNZIP_CPP="$APS3E_CPP/rpcs3/rpcs3/Crypto/unzip.cpp"
+          UNZIP_CPP="$SRC_DIR/rpcs3/rpcs3/Crypto/unzip.cpp"
           if [ -f "$UNZIP_CPP" ]; then
             sed -i '' 's/reinterpret_cast<const u8\*>(src)/const_cast<u8*>(reinterpret_cast<const u8*>(src))/g' "$UNZIP_CPP"
           fi
-          SERIAL_EXT_CPP="$APS3E_CPP/rpcs3/rpcs3/util/serialization_ext.cpp"
+          SERIAL_EXT_CPP="$SRC_DIR/rpcs3/rpcs3/util/serialization_ext.cpp"
           if [ -f "$SERIAL_EXT_CPP" ]; then
             sed -i '' 's/reinterpret_cast<const u8\*>(m_stream_data.data() + m_stream_data_index)/const_cast<u8*>(reinterpret_cast<const u8*>(m_stream_data.data() + m_stream_data_index))/g' "$SERIAL_EXT_CPP"
             sed -i '' 's/m_zs\.next_in = data\.data();/m_zs.next_in = const_cast<u8*>(data.data());/g' "$SERIAL_EXT_CPP"
           fi
           
           # Patch asmjit virtmem.cpp: include <libkern/OSCacheControl.h> on iOS too (not just macOS)
-          VIRTMEM_CPP="$APS3E_CPP/rpcs3/3rdparty/asmjit/asmjit/src/asmjit/core/virtmem.cpp"
+          VIRTMEM_CPP="$SRC_DIR/rpcs3/3rdparty/asmjit/asmjit/src/asmjit/core/virtmem.cpp"
           if [ -f "$VIRTMEM_CPP" ]; then
             sed -i '' 's/#if TARGET_OS_OSX/#if TARGET_OS_OSX || TARGET_OS_IOS/' "$VIRTMEM_CPP"
             echo "Patched asmjit virtmem.cpp to include OSCacheControl.h on iOS"
           fi
           
-          # Patch bcdec.hpp: add default BGRA=false to templates (aps3e has template BGRA, stock rpcs3 does not)
-          BCDEC_HPP="$APS3E_CPP/rpcs3/3rdparty/bcdec/bcdec.hpp"
+          # Patch bcdec.hpp: add default BGRA=false to templates
+          BCDEC_HPP="$SRC_DIR/rpcs3/3rdparty/bcdec/bcdec.hpp"
           if [ -f "$BCDEC_HPP" ]; then
             sed -i '' 's/template <bool BGRA>/template <bool BGRA = false>/g' "$BCDEC_HPP"
             echo "Patched bcdec.hpp to add default BGRA=false"
           fi
           
           # Patch VMA API rename: vmaGetHeapBudgets → vmaGetBudget (newer VMA version)
-          VKMEMORY_CPP="$APS3E_CPP/rpcs3/rpcs3/Emu/RSX/VK/vkutils/memory.cpp"
+          VKMEMORY_CPP="$SRC_DIR/rpcs3/rpcs3/Emu/RSX/VK/vkutils/memory.cpp"
           if [ -f "$VKMEMORY_CPP" ]; then
             sed -i '' 's/vmaGetHeapBudgets/vmaGetBudget/g' "$VKMEMORY_CPP"
             echo "Patched memory.cpp: vmaGetHeapBudgets → vmaGetBudget"
           fi
           
           # Patch metal_layer.mm: use UIKit instead of AppKit on iOS
-          METAL_LAYER="$APS3E_CPP/rpcs3/rpcs3/Emu/RSX/VK/vkutils/metal_layer.mm"
+          METAL_LAYER="$SRC_DIR/rpcs3/rpcs3/Emu/RSX/VK/vkutils/metal_layer.mm"
           if [ -f "$METAL_LAYER" ]; then
             cat > "$METAL_LAYER" << 'METAL_EOF'
           #pragma GCC diagnostic push
@@ -1025,20 +1026,20 @@ jobs:
           fi
           
           # Patch JIT.h
-          if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
+          if [ -f "$SRC_DIR/rpcs3/Utilities/JIT.h" ]; then
             TMPJIT=$(mktemp)
             echo '#undef __API_UNAVAILABLE' > "$TMPJIT"
             echo '#define __API_UNAVAILABLE(...)' >> "$TMPJIT"
             echo '#undef __API_UNAVAILABLE_MSG' >> "$TMPJIT"
             echo '#define __API_UNAVAILABLE_MSG(...)' >> "$TMPJIT"
             echo '#pragma clang diagnostic ignored "-Wunguarded-availability-new"' >> "$TMPJIT"
-            cat "$APS3E_CPP/rpcs3/Utilities/JIT.h" >> "$TMPJIT"
-            mv "$TMPJIT" "$APS3E_CPP/rpcs3/Utilities/JIT.h"
+            cat "$SRC_DIR/rpcs3/Utilities/JIT.h" >> "$TMPJIT"
+            mv "$TMPJIT" "$SRC_DIR/rpcs3/Utilities/JIT.h"
           fi
           
           # Generate localized_string_id.inc (normally generated by rpcs3's cmake)
-          L10N_H="$APS3E_CPP/rpcs3/rpcs3/Emu/localized_string_id.h"
-          L10N_INC="$APS3E_CPP/rpcs3/rpcs3/Emu/localized_string_id.inc"
+          L10N_H="$SRC_DIR/rpcs3/rpcs3/Emu/localized_string_id.h"
+          L10N_INC="$SRC_DIR/rpcs3/rpcs3/Emu/localized_string_id.inc"
           if [ -f "$L10N_H" ]; then
             perl -ne 'if (/\b([A-Z][A-Z_0-9]+)\s*(?:,|\s*$)/ && $1 ne "INVALID") { print "WRAP($1)\n"; }' "$L10N_H" > "$L10N_INC"
             echo "Generated localized_string_id.inc with $(wc -l < "$L10N_INC") entries"
@@ -1047,16 +1048,16 @@ jobs:
           fi
           
           # Create pthread wrapper
-          echo '#pragma once' > "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#undef __API_UNAVAILABLE' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#define __API_UNAVAILABLE(...)' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#undef __API_UNAVAILABLE_MSG' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#define __API_UNAVAILABLE_MSG(...)' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
-          echo '#include_next <pthread.h>' >> "$APS3E_CPP/ffmpeg_stubs/pthread.h"
+          echo '#pragma once' > "$SRC_DIR/ffmpeg_stubs/pthread.h"
+          echo '#undef __API_UNAVAILABLE' >> "$SRC_DIR/ffmpeg_stubs/pthread.h"
+          echo '#define __API_UNAVAILABLE(...)' >> "$SRC_DIR/ffmpeg_stubs/pthread.h"
+          echo '#undef __API_UNAVAILABLE_MSG' >> "$SRC_DIR/ffmpeg_stubs/pthread.h"
+          echo '#define __API_UNAVAILABLE_MSG(...)' >> "$SRC_DIR/ffmpeg_stubs/pthread.h"
+          echo '#include_next <pthread.h>' >> "$SRC_DIR/ffmpeg_stubs/pthread.h"
           
           # Create android/log.h stub for iOS
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/android"
-          cat > "$APS3E_CPP/ffmpeg_stubs/android/log.h" << 'ALOGEOF'
+          mkdir -p "$SRC_DIR/ffmpeg_stubs/android"
+          cat > "$SRC_DIR/ffmpeg_stubs/android/log.h" << 'ALOGEOF'
           #pragma once
           #include <stdarg.h>
           typedef enum {
@@ -1076,8 +1077,8 @@ jobs:
           
           # Create comprehensive GL/glew.h stub (GLEW submodule empty; OpenGL.h includes it on non-Windows)
           # Use iOS SDK's OpenGL ES3 headers for real GL function declarations, add desktop-only extras
-          mkdir -p "$APS3E_CPP/rpcs3/3rdparty/GLEW/include/GL"
-          cat > "$APS3E_CPP/rpcs3/3rdparty/GLEW/include/GL/glew.h" << 'GLEWEOF'
+          mkdir -p "$SRC_DIR/rpcs3/3rdparty/GLEW/include/GL"
+          cat > "$SRC_DIR/rpcs3/3rdparty/GLEW/include/GL/glew.h" << 'GLEWEOF'
           #pragma once
           #ifndef __glew_h__
           #define __glew_h__
@@ -1113,8 +1114,8 @@ jobs:
           GLEWEOF
           
           # Create OpenGL/gl.h and OpenGL/glu.h stubs (iOS SDK lacks the OpenGL framework)
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/OpenGL"
-          cat > "$APS3E_CPP/ffmpeg_stubs/OpenGL/gl.h" << 'GLSTUBEOF'
+          mkdir -p "$SRC_DIR/ffmpeg_stubs/OpenGL"
+          cat > "$SRC_DIR/ffmpeg_stubs/OpenGL/gl.h" << 'GLSTUBEOF'
           #pragma once
           #ifndef __gl_h_
           #define __gl_h_
@@ -1142,10 +1143,10 @@ jobs:
           typedef unsigned int GLsync;
           #endif
           GLSTUBEOF
-          cp "$APS3E_CPP/ffmpeg_stubs/OpenGL/gl.h" "$APS3E_CPP/ffmpeg_stubs/OpenGL/glu.h"
+          cp "$SRC_DIR/ffmpeg_stubs/OpenGL/gl.h" "$SRC_DIR/ffmpeg_stubs/OpenGL/glu.h"
           
           # Create miniupnp stub headers (UPnP disabled but headers still included)
-          MINIFILE="$APS3E_CPP/ffmpeg_stubs/miniupnpc.h"
+          MINIFILE="$SRC_DIR/ffmpeg_stubs/miniupnpc.h"
           echo '#pragma once' > "$MINIFILE"
           echo 'typedef struct { int dummy; } UPNPUrls;' >> "$MINIFILE"
           echo 'typedef struct { int dummy; } IGDdatas;' >> "$MINIFILE"
@@ -1155,11 +1156,11 @@ jobs:
           echo 'static inline int UPNP_DeletePortMapping(UPNPUrls *a, IGDdatas *b, const char *c, const char *d, const char *e){(void)a;(void)b;(void)c;(void)d;(void)e;return 0;}' >> "$MINIFILE"
           echo 'static inline int UPNP_AddPortMapping(UPNPUrls *a, IGDdatas *b, const char *c, const char *d, const char *e, const char *f, const char *g, int h){(void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)h;return 0;}' >> "$MINIFILE"
           echo 'static inline void freeUPNPUrls(UPNPUrls *a){(void)a;}' >> "$MINIFILE"
-          cp "$MINIFILE" "$APS3E_CPP/ffmpeg_stubs/miniupnperrors.h"
+          cp "$MINIFILE" "$SRC_DIR/ffmpeg_stubs/miniupnperrors.h"
           
           # Create cubeb stub headers
-          mkdir -p "$APS3E_CPP/ffmpeg_stubs/cubeb"
-          cat > "$APS3E_CPP/ffmpeg_stubs/cubeb/cubeb.h" << 'CUBEBEOF'
+          mkdir -p "$SRC_DIR/ffmpeg_stubs/cubeb"
+          cat > "$SRC_DIR/ffmpeg_stubs/cubeb/cubeb.h" << 'CUBEBEOF'
           #pragma once
           #include <stdint.h>
           #include <stddef.h>
@@ -1212,19 +1213,19 @@ jobs:
           CUBEBEOF
           
           # Patch ConfigureCompiler.cmake
-          if [ -f "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" ]; then
-            sed -i '' 's/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=return-type//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g; s/-Werror=inconsistent-missing-override//g; s/-Werror=delete-non-virtual-dtor//g' "$APS3E_CPP/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake"
+          if [ -f "$SRC_DIR/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake" ]; then
+            sed -i '' 's/-Werror=old-style-cast//g; s/-Werror=sign-compare//g; s/-Werror=reorder//g; s/-Werror=return-type//g; s/-Werror=overloaded-virtual//g; s/-Werror=missing-noreturn//g; s/-Werror=implicit-fallthrough//g; s/-Werror=inconsistent-missing-override//g; s/-Werror=delete-non-virtual-dtor//g' "$SRC_DIR/rpcs3/buildfiles/cmake/ConfigureCompiler.cmake"
           fi
           
           # Patch cellSysmodule.cpp: replace std::ranges::contains (C++23) with C++20 compat
-          CELL_SYSMOD="$APS3E_CPP/rpcs3/rpcs3/Emu/Cell/Modules/cellSysmodule.cpp"
+          CELL_SYSMOD="$SRC_DIR/rpcs3/rpcs3/Emu/Cell/Modules/cellSysmodule.cpp"
           if [ -f "$CELL_SYSMOD" ]; then
             sed -i '' 's/std::ranges::contains(/_compat::contains(/g' "$CELL_SYSMOD"
             perl -i -0pe 's/(#include <ranges>)/$1\n#include <algorithm>\nnamespace _compat { template<typename R, typename T> static inline bool contains(R\&\& r, const T\& v) { for (auto\& x : r) if (x == v) return true; return false; } }/' "$CELL_SYSMOD"
           fi
           
           # Replace 3rdparty/CMakeLists.txt with iOS-compatible version
-          THIRDPARTY="$APS3E_CPP/rpcs3/3rdparty/CMakeLists.txt"
+          THIRDPARTY="$SRC_DIR/rpcs3/3rdparty/CMakeLists.txt"
           cp "$THIRDPARTY" "${THIRDPARTY}.bak"
           cat > "$THIRDPARTY" << 'CMAKEOF'
           cmake_minimum_required(VERSION 3.22.1)
@@ -1351,9 +1352,9 @@ jobs:
 
       - name: Create iOS CMakeLists
         run: |
-          APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
+          SRC_DIR=build_src
           
-          cat > "$APS3E_CPP/CMakeLists.txt" << 'CMAKEEOF'
+          cat > "$SRC_DIR/CMakeLists.txt" << 'CMAKEEOF'
           cmake_minimum_required(VERSION 3.28)
           project(ps3dream LANGUAGES C CXX OBJCXX)
           
@@ -1399,9 +1400,8 @@ jobs:
           
           include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg_stubs)
           
-          # Repo root is 6 levels up from aps3e-extracted/aps3e-2.40/app/src/main/cpp
-          # cpp -> main -> src -> app -> 2.40 -> aps3e-extracted -> repo_root
-          set(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..")
+          # Repo root is one level up from build_src
+          set(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
           
           add_subdirectory(rpcs3 EXCLUDE_FROM_ALL)
           
@@ -1428,17 +1428,7 @@ jobs:
             ${REPO_ROOT}/Ps3Dream/JIT/ios_jit.cpp
             # MoltenVK
             ${REPO_ROOT}/Ps3Dream/MoltenVK/ios_mvk.cpp
-            # APS3E sources
-            aps3e_rp3_impl.cpp
-            aps3e_emu.cpp
-            aps3e.cpp
-            vkapi.cpp
-            vkutil.cpp
-            cpuinfo.cpp
-            glsl2spv.cpp
-            meminfo.cpp
-            emulator.cpp
-            emulator_aps3e.cpp
+            # rpcs3 Input modules
             rpcs3/rpcs3/Input/raw_mouse_config.cpp
             rpcs3/rpcs3/Input/raw_mouse_handler.cpp
             rpcs3/rpcs3/Input/product_info.cpp
@@ -1527,9 +1517,9 @@ jobs:
 
       - name: Build native library
         run: |
-          APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
+          SRC_DIR=build_src
           
-          cd "$APS3E_CPP"
+          cd "$SRC_DIR"
           rm -rf build_ios
           mkdir build_ios && cd build_ios
           
@@ -1577,7 +1567,7 @@ jobs:
 
       - name: Build Swift app and package IPA
         run: |
-          APS3E_CPP=aps3e-extracted/aps3e-2.40/app/src/main/cpp
+          SRC_DIR=build_src
           
           # Create app bundle structure
           APP_DIR="Payload/Ps3Dream.app"
@@ -1590,9 +1580,9 @@ jobs:
           cp Ps3Dream/Ps3Dream.entitlements "$APP_DIR/"
           
           # Find the built static library
-          NATIVE_LIB=$(find "$APS3E_CPP/build_ios" -name "libps3dream_native.a" -path "*/Release/*" 2>/dev/null | head -1)
+          NATIVE_LIB=$(find "$SRC_DIR/build_ios" -name "libps3dream_native.a" -path "*/Release/*" 2>/dev/null | head -1)
           if [ -z "$NATIVE_LIB" ]; then
-            NATIVE_LIB=$(find "$APS3E_CPP/build_ios" -name "libps3dream_native.a" 2>/dev/null | head -1)
+            NATIVE_LIB=$(find "$SRC_DIR/build_ios" -name "libps3dream_native.a" 2>/dev/null | head -1)
           fi
           
           if [ -n "$NATIVE_LIB" ]; then
@@ -1600,16 +1590,16 @@ jobs:
             cp "$NATIVE_LIB" "$APP_DIR/"
           else
             echo "WARNING: Native lib not found, trying dylib"
-            find "$APS3E_CPP/build_ios" -name "*.dylib" -exec cp {} "$APP_DIR/" \; 2>/dev/null || true
+            find "$SRC_DIR/build_ios" -name "*.dylib" -exec cp {} "$APP_DIR/" \; 2>/dev/null || true
           fi
           
           # Collect all include paths for Swift compilation
           SWIFT_FLAGS=""
           INCLUDE_DIRS=(
-            "$APS3E_CPP"
-            "$APS3E_CPP/rpcs3"
-            "$APS3E_CPP/rpcs3/rpcs3"
-            "$APS3E_CPP/ffmpeg_stubs"
+            "$SRC_DIR"
+            "$SRC_DIR/rpcs3"
+            "$SRC_DIR/rpcs3/rpcs3"
+            "$SRC_DIR/ffmpeg_stubs"
             "Ps3Dream/Platform"
             "Ps3Dream/JIT"
             "Ps3Dream/MoltenVK"
@@ -1645,16 +1635,16 @@ jobs:
             -c Ps3Dream/Platform/ios_metal_stub.m -o "$APP_DIR/ios_metal_stub.o"
           xcrun -sdk iphoneos clang++ -target arm64-apple-ios17.0 -std=c++20 \
             -DARCH_ARM64=1 -D'__API_UNAVAILABLE(...)=' \
-            -I"$APS3E_CPP/rpcs3" \
-            -I"$APS3E_CPP/rpcs3/rpcs3" \
-            -I"$APS3E_CPP/rpcs3/rpcs3/Utilities" \
-            -I"$APS3E_CPP/rpcs3/rpcs3/3rdparty" \
-            -I"$APS3E_CPP/ffmpeg_stubs" \
+            -I"$SRC_DIR/rpcs3" \
+            -I"$SRC_DIR/rpcs3/rpcs3" \
+            -I"$SRC_DIR/rpcs3/rpcs3/Utilities" \
+            -I"$SRC_DIR/rpcs3/rpcs3/3rdparty" \
+            -I"$SRC_DIR/ffmpeg_stubs" \
             -c Ps3Dream/Platform/ios_link_stub.cpp -o "$APP_DIR/ios_link_stub.o"
           
           # Collect all static libraries produced by the native build:
           # ps3dream_native (glue) + rpcs3_emu (core) + all 3rdparty libs + LLVM + MoltenVK
-          NATIVE_LIBS=$(find "$APS3E_CPP/build_ios" -name "*.a" 2>/dev/null | sort -u)
+          NATIVE_LIBS=$(find "$SRC_DIR/build_ios" -name "*.a" 2>/dev/null | sort -u)
           LLVM_LIBS=$(find "$GITHUB_WORKSPACE/llvm-ios-install/lib" -name "*.a" 2>/dev/null | sort -u)
           if [ -n "$LLVM_LIBS" ]; then
             NATIVE_LIBS="$NATIVE_LIBS

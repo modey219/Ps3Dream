@@ -102,7 +102,6 @@ static void notify_status(int status) {
 }
 
 // ==================== iOS GS Frame ====================
-// Replaces android_gs_frame from aps3e_rp3_impl.h
 
 class ios_gs_frame : public GSFrameBase {
 public:
