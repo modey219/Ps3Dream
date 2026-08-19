@@ -33,9 +33,7 @@ using namespace std::literals;
 
 #include "Utilities/StrFmt.h"
 
-// Forward declarations for networking types from non-compiled TUs
-enum class IPV6_SUPPORT : int { DISABLED = 0, ENABLED = 1 };
-enum class thread_state : int {};
+// IPV6_SUPPORT and thread_state are already defined in Thread.h
 
 namespace np
 {
