@@ -985,6 +985,13 @@ jobs:
             echo "Patched asmjit virtmem.cpp to include OSCacheControl.h on iOS"
           fi
           
+          # Patch bcdec.hpp: add default BGRA=false to templates (aps3e has template BGRA, stock rpcs3 does not)
+          BCDEC_HPP="$APS3E_CPP/rpcs3/3rdparty/bcdec/bcdec.hpp"
+          if [ -f "$BCDEC_HPP" ]; then
+            sed -i '' 's/template <bool BGRA>/template <bool BGRA = false>/g' "$BCDEC_HPP"
+            echo "Patched bcdec.hpp to add default BGRA=false"
+          fi
+          
           # Patch JIT.h
           if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
             TMPJIT=$(mktemp)
