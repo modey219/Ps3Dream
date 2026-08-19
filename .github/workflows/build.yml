@@ -956,6 +956,8 @@ jobs:
             sed -i '' '/cellDmuxPamf\.cpp/d' "$EMU_CMAKE"
             # Remove RB3Midi files (need rtmidi submodule not available on iOS)
             sed -i '' '/RB3MidiKeyboard\.cpp/d; /RB3MidiGuitar\.cpp/d' "$EMU_CMAKE"
+            # Remove CgBinaryProgram.cpp (includes GLVertexProgram.h which pulls in desktop GL headers not available on iOS)
+            sed -i '' '/CgBinaryProgram\.cpp/d' "$EMU_CMAKE"
             echo "Patched Emu/CMakeLists.txt to remove NP sources and unsupported modules"
           fi
           
@@ -1051,6 +1053,8 @@ jobs:
           #define __glew_h__
           #include <OpenGLES/ES3/gl.h>
           #include <OpenGLES/ES3/glext.h>
+          #define __gl_h_
+          #define __glu_h__
           #ifndef GL_NONE
           #define GL_NONE 0
           #endif
