@@ -1710,6 +1710,7 @@ jobs:
             -Xlinker -lz \
             -Xlinker -liconv \
             -Xlinker -ObjC \
+            -Xlinker -allow-multiple-definitions \
             -Xlinker -v \
             -Xlinker -t \
             -emit-executable \
