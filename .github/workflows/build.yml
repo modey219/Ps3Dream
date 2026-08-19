@@ -1636,8 +1636,17 @@ jobs:
             -I"$SRC_DIR/rpcs3" \
             -I"$SRC_DIR/rpcs3/rpcs3" \
             -I"$SRC_DIR/rpcs3/rpcs3/Utilities" \
-            -I"$SRC_DIR/rpcs3/rpcs3/3rdparty" \
             -I"$SRC_DIR/ffmpeg_stubs" \
+            -I"$SRC_DIR/rpcs3/3rdparty" \
+            -I"$SRC_DIR/rpcs3/3rdparty/asmjit/asmjit/src" \
+            -I"$SRC_DIR/rpcs3/3rdparty/yaml-cpp/yaml-cpp/include" \
+            -I"$SRC_DIR/rpcs3/3rdparty/pugixml/src" \
+            -I"$SRC_DIR/rpcs3/3rdparty/SoundTouch/soundtouch/include" \
+            -I"$SRC_DIR/rpcs3/3rdparty/stblib/stb" \
+            -I"$SRC_DIR/rpcs3/3rdparty/glslang/glslang" \
+            -I"$SRC_DIR/rpcs3/3rdparty/libpng/libpng" \
+            -I"$SRC_DIR/rpcs3/3rdparty/VulkanMemoryAllocator/include" \
+            -I"$SRC_DIR/rpcs3/3rdparty/zstd/zstd/lib" \
             -I"$GITHUB_WORKSPACE/llvm-ios-install/include" \
             -c Ps3Dream/Platform/ios_link_stub.cpp -o "$APP_DIR/ios_link_stub.o"
           

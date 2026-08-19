@@ -1,83 +1,152 @@
-# Ps3Dream iOS
+<div align="center">
 
-PS3 Emulator for iOS - Ported from [APS3E](https://github.com/nicegram/APS3E) (Android) using [RPCS3](https://github.com/RPCS3/rpcs3) core.
+# Ps3Dream
+
+### PlayStation 3 Emulator for iOS
+
+[![Build](https://github.com/modey219/Ps3Dream/actions/workflows/build.yml/badge.svg)](https://github.com/modey219/Ps3Dream/actions/workflows/build.yml)
+![Platform](https://img.shields.io/badge/platform-iOS%2017.0+-blue)
+![Architecture](https://img.shields.io/badge/architecture-ARM64-orange)
+![License](https://img.shields.io/badge/license-GPL--3.0-green)
+
+<br/>
+
+*Run PS3 games on your iPhone or iPad — powered by the [RPCS3](https://rpcs3.net) emulator core.*
+
+</div>
+
+---
+
+## Overview
+
+Ps3Dream is an iOS port of the RPCS3 PlayStation 3 emulator. It compiles the entire RPCs3 core for iOS ARM64, translates Vulkan rendering to Metal via MoltenVK, and provides a native Swift/UIKit interface for game management, touch controls, and settings.
+
+| Component | Implementation |
+|-----------|---------------|
+| **Emulation Core** | RPCS3 PPU/SPU LLVM recompilers (ARM64 native) |
+| **Graphics** | Vulkan → MoltenVK → Metal |
+| **Input** | Touch overlay (VirtualPadOverlay) mapped to RPCS3 pad system |
+| **Audio** | Cubeb cross-platform backend |
+| **UI** | Swift/UIKit — game browser, settings, firmware install |
+| **Bridge** | Objective-C++ (`Ps3DreamBridge.mm`) replacing Android JNI |
+
+---
 
 ## Architecture
 
 ```
-ps3dream-ios/
-├── CMakeLists.txt                    # iOS CMake build system
-├── build_ios.sh                      # Build script for macOS
-├── Ps3Dream/
-│   ├── Ps3DreamApp.swift             # App entry point
-│   ├── Info.plist                    # iOS app configuration
-│   ├── Ps3Dream.entitlements         # JIT & sandbox entitlements
-│   ├── ps3dream_emulator.hpp         # RPCS3 include umbrella
-│   ├── Ps3Dream-Bridging-Header.h    # C/C++ ↔ Swift bridge
-│   ├── Bridge/
-│   │   ├── Ps3DreamBridge.h          # C API header (replaces JNI)
-│   │   └── Ps3DreamBridge.mm         # Obj-C++ bridge implementation
-│   ├── Emulator/
-│   │   ├── EmulatorManager.swift     # Emulator lifecycle manager
-│   │   └── AppSettings.swift         # Persistent settings (UserDefaults)
-│   ├── Platform/
-│   │   ├── ios_platform.h            # Platform abstraction
-│   │   ├── ios_window.h/.cpp         # CAMetalLayer ↔ ANativeWindow
-│   │   ├── ios_log.h                 # os_log ↔ __android_log
-│   │   ├── ios_mmap.h                # Memory mapping
-│   │   ├── ios_cpuinfo.cpp           # CPU detection (ARM64 features)
-│   │   └── ios_meminfo.cpp           # Memory info (mach API)
-│   ├── JIT/
-│   │   └── ios_jit.h/.cpp            # JIT enable (csops/mprotect)
-│   ├── MoltenVK/
-│   │   └── ios_mvk.h/.cpp            # Vulkan → Metal via MoltenVK
-│   ├── UI/
-│   │   ├── GameListViewController.swift   # Game browser + firmware install
-│   │   ├── GameCell.swift                 # Game list cell
-│   │   ├── EmulatorViewController.swift   # Emulation screen
-│   │   ├── VirtualPadOverlay.swift        # Touch controller
-│   │   └── SettingsViewController.swift   # Settings with persistence
-│   └── Assets.xcassets/              # App icons & images
-├── aps3e-extracted/                   # APS3E source (Android bridge + RPCS3)
-│   └── aps3e-2.40/app/src/main/cpp/
-│       ├── *.cpp                     # Android bridge sources
-│       └── rpcs3/                    # RPCS3 emulator core + 3rdparty
-└── .github/workflows/build.yml       # GitHub Actions CI pipeline
+┌─────────────────────────────────────────────────┐
+│  Swift / UIKit                                 │
+│  ┌───────────┐ ┌──────────┐ ┌───────────────┐  │
+│  │ GameList  │ │ Emulator │ │ VirtualPad    │  │
+│  │ ViewCtrl  │ │ ViewCtrl │ │ Overlay       │  │
+│  └─────┬─────┘ └────┬─────┘ └──────┬────────┘  │
+│        │             │              │            │
+│  ┌─────┴─────────────┴──────────────┴────────┐  │
+│  │         EmulatorManager.swift             │  │
+│  └─────────────────────┬─────────────────────┘  │
+├────────────────────────┼────────────────────────┤
+│  Objective-C++ Bridge  │                        │
+│  ┌─────────────────────┴─────────────────────┐  │
+│  │         Ps3DreamBridge.mm                 │  │
+│  └─────────────────────┬─────────────────────┘  │
+├────────────────────────┼────────────────────────┤
+│  C++ / RPCS3 Core                            │
+│  ┌───────────┐ ┌───────┴──────┐ ┌───────────┐  │
+│  │ Emu/Cell  │ │ Emu/RSX/VK  │ │ Input/    │  │
+│  │ PPU/SPU   │ │ VKGSRender  │ │ pad_thread│  │
+│  └─────┬─────┘ └──────┬──────┘ └─────┬─────┘  │
+│        │               │              │         │
+│  ┌─────┴───────────────┴──────────────┴──────┐  │
+│  │              librpcs3_emu.a               │  │
+│  └───────────────────┬───────────────────────┘  │
+├──────────────────────┼──────────────────────────┤
+│  Platform Layer                           │
+│  ┌────────┐ ┌────────┐ ┌───────┐ ┌──────┐│  │
+│  │ MoltenVK│ │ JIT    │ │ Window│ │ Metal││  │
+│  │ iOS_MVK │ │ csops  │ │ CAML  │ │ stub ││  │
+│  └────────┘ └────────┘ └───────┘ └──────┘│  │
+└─────────────────────────────────────────────────┘
 ```
 
-## Key Differences from Android Version
+---
 
-| Component | Android (APS3E) | iOS (Ps3Dream) |
-|-----------|-----------------|----------------|
-| **Bridge** | JNI (`JNIEnv*`) | Objective-C++ (`Ps3DreamBridge.mm`) |
-| **Surface** | `ANativeWindow` | `CAMetalLayer` (Metal) |
-| **Vulkan** | `dlopen("libvulkan.so")` | MoltenVK (Vulkan→Metal) |
-| **JIT** | Automatic (Linux) | `csops()` + Developer Mode |
-| **Logging** | `__android_log_print` | `os_log` |
-| **UI** | Java/Android XML | Swift/UIKit |
-| **Input** | `AndroidVirtualPadHandler` | `VirtualPadOverlay` (touch) |
-| **Threading** | Linux pthreads | Apple pthreads + Grand Central |
-| **Settings** | YAML config file | UserDefaults persistence |
+## Features
 
-## Requirements
+- **Game Library** — Scan folders for PS3 games; reads PARAM.SFO titles and icons
+- **Firmware & PKG Install** — Import PS3 PUP firmware and PKG packages
+- **Touch Controller** — Full virtual pad overlay with D-pad, face buttons, triggers, analog sticks
+- **Renderer Selection** — Vulkan (via MoltenVK) or Null renderer
+- **Resolution Scaling** — 480p to 1080p with upscaling
+- **FPS Counter** — Optional frame rate overlay
+- **Screenshots** — Capture and save to Photos
+- **Persistent Settings** — Renderer, audio, resolution, input opacity via UserDefaults
 
-- **macOS** with Xcode 15+ (for local build) or **GitHub Actions** (no Mac needed)
-- **iOS 17.0+** device (Developer Mode enabled)
-- **MoltenVK SDK** ([download](https://github.com/KhronosGroup/MoltenVK/releases))
-- **PS3 Firmware** (PUP file, 4.91)
+---
 
-## Build Instructions
+## Project Structure
 
-### Option 1: GitHub Actions (No Mac needed)
-See [BUILD_INSTRUCTIONS_AR.md](BUILD_INSTRUCTIONS_AR.md) for Arabic guide.
+```
+ps3dream-ios/
+├── .github/workflows/build.yml    # CI pipeline (macOS-14, Xcode 15.4)
+├── CMakeLists.txt                  # iOS CMake build system
+├── Ps3Dream/
+│   ├── Bridge/
+│   │   ├── Ps3DreamBridge.h        # C API header
+│   │   └── Ps3DreamBridge.mm       # Obj-C++ bridge (replaces JNI)
+│   ├── Emulator/
+│   │   ├── EmulatorManager.swift   # Emulator lifecycle
+│   │   └── AppSettings.swift       # UserDefaults config
+│   ├── Platform/
+│   │   ├── ios_window.cpp          # CAMetalLayer ↔ ANativeWindow
+│   │   ├── ios_cpuinfo.cpp         # CPU detection (ARM64)
+│   │   ├── ios_meminfo.cpp         # Memory info (mach API)
+│   │   ├── ios_link_stub.cpp       # Link-time symbol stubs
+│   │   ├── ios_jit_stub.cpp        # JIT enable stub
+│   │   └── ios_metal_stub.cpp      # Metal layer stub
+│   ├── JIT/
+│   │   └── ios_jit.cpp             # csops() JIT activation
+│   ├── MoltenVK/
+│   │   └── ios_mvk.cpp             # Vulkan → Metal
+│   ├── UI/
+│   │   ├── GameListViewController.swift
+│   │   ├── EmulatorViewController.swift
+│   │   ├── VirtualPadOverlay.swift
+│   │   ├── SettingsViewController.swift
+│   │   └── GameCell.swift
+│   └── Swift/
+│       ├── Ps3DreamApp.swift       # App entry point
+│       └── Assets.xcassets/
+├── rpcs3_build/                    # Cloned RPCS3 core (pinned)
+└── build_ios.sh                    # Local build script
+```
 
-### Option 2: Local Build on macOS
+---
+
+## Build
+
+### CI (Recommended)
+
+Push to `main` — GitHub Actions builds the full IPA automatically:
+
+1. Clones RPCS3 core at pinned commit
+2. Cross-compiles LLVM for iOS ARM64
+3. Builds `librpcs3_emu.a` (1164+ translation units)
+4. Compiles 3rdparty libs (asmjit, yaml-cpp, SoundTouch, glslang, SPIRV, etc.)
+5. Links everything with the Swift app into an IPA artifact
+
+Download the `.ipa` from [Actions → latest run → Artifacts](https://github.com/modey219/Ps3Dream/actions).
+
+### Local Build (macOS)
+
 ```bash
-# 1. Clone/download MoltenVK
-git clone https://github.com/KhronosGroup/MoltenVK.git
-cd MoltenVK && make
+# Requirements: macOS with Xcode 15+, iOS SDK 17.0+
 
-# 2. Clone rpcs3 for reference
+# 1. Build MoltenVK
+git clone https://github.com/KhronosGroup/MoltenVK.git
+cd MoltenVK && make && cd ..
+
+# 2. Clone RPCS3 core
 git clone --depth 1 --recursive https://github.com/RPCS3/rpcs3.git
 
 # 3. Build Ps3Dream
@@ -85,81 +154,101 @@ cd ps3dream-ios
 chmod +x build_ios.sh
 ./build_ios.sh /path/to/MoltenVK
 
-# 4. Open in Xcode and deploy
+# 4. Open in Xcode
 open build-ios/Ps3Dream.xcodeproj
 ```
 
-## Enable JIT on iOS
+---
 
-JIT compilation is **required** for PPU/SPU recompilers. On iOS 17+:
+## Requirements
 
-1. Go to **Settings > Privacy & Security > Developer Mode**
-2. Turn **Developer Mode ON**
-3. Restart the app
-4. JIT will be enabled automatically via `csops(CS_DEBUGGED)`
+| Requirement | Details |
+|-------------|---------|
+| **Device** | iPhone or iPad with ARM64 (A12+) |
+| **OS** | iOS 17.0 or later |
+| **Developer Mode** | Settings → Privacy & Security → Developer Mode (ON) |
+| **PS3 Firmware** | PUP file (v4.91) — install via the app |
+| **Storage** | 2 GB+ free (emulator + games) |
+
+---
 
 ## How It Works
 
-### Bridge Layer (`Ps3DreamBridge.mm`)
-The Objective-C++ bridge replaces all JNI calls from the Android version:
-- **Config**: YAML parsing via yaml-cpp (same as Android)
-- **Boot**: `Emu.BootGame()` / `Emu.BootISO()` (same RPCS3 core)
-- **Render**: `VKGSRender` via MoltenVK (Vulkan→Metal)
-- **Input**: Virtual pad → `pad_thread` → RPCS3 input system
-- **Audio**: Cubeb backend (cross-platform)
-
-### Emulator Manager (`EmulatorManager.swift`)
-Manages the emulator lifecycle from Swift:
-- State observation (running/paused/stopped)
-- Button/stick input mapping
-- Firmware and PKG installation
-- Thread-safe callbacks to UI
-
-### App Settings (`AppSettings.swift`)
-Persistent configuration via UserDefaults:
-- Renderer selection (Vulkan/Null)
-- Resolution scale (480p-1080p)
-- Audio backend
-- Virtual pad opacity
-- FPS counter toggle
-
-### MoltenVK Integration
-MoltenVK translates Vulkan API calls to Metal:
-1. RPCS3's `VKGSRender` calls Vulkan functions
-2. MoltenVK intercepts and translates to Metal commands
-3. Metal renders on the GPU via `CAMetalLayer`
-
 ### JIT Compilation
-RPCS3 recompiles PS3 PPU/SPU code to ARM64 native code:
-- PPU LLVM recompiler generates ARM64 machine code
-- SPU ASMJIT/LLVM recompiler generates ARM64 code
-- These require W^X (Write XOR Execute) memory pages
-- iOS restricts this via code signing; Developer Mode relaxes it
 
-## Features
+RPCS3 recompiles PS3 PPU and SPU bytecode to native ARM64 instructions at runtime. This requires **Write XOR Execute** memory pages, which iOS restricts by default. Developer Mode + `csops(CS_DEBUGGED)` enables JIT:
 
-- **Game Browser**: Scan folders for PS3 games, read PARAM.SFO titles
-- **Firmware Install**: Import and install PS3 PUP firmware files
-- **PKG Install**: Import and install PS3 PKG packages
-- **Virtual Controller**: Full touch overlay with D-pad, face buttons, shoulders, analog sticks
-- **Settings**: Configurable renderer, resolution, audio, input opacity
-- **FPS Counter**: Optional frame rate display
-- **Screenshot**: Capture and save screenshots to Photos
+```c
+// ios_jit.cpp
+int cs_op = CS_OPS_STATUS;
+cs_ops(NULL, &cs_op, ...);  // Enable debug flag
+mprotect(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC);
+```
+
+### MoltenVK Rendering Pipeline
+
+```
+RPCS3 VKGSRender → Vulkan API → MoltenVK → Metal API → CAMetalLayer
+```
+
+MoltenVK intercepts all Vulkan calls and translates them to Metal equivalents. The `swapchain_macos.hpp` is patched to use `CAMetalLayer` on iOS.
+
+### Bridge Layer
+
+`Ps3DreamBridge.mm` implements the C API that Swift calls via bridging header. It manages the RPCS3 emulator lifecycle:
+
+- **Boot**: `Emu.BootGame()` / `Emu.BootISO()`
+- **Render**: Creates `VKGSRender` with MoltenVK
+- **Input**: Routes touch events through `pad_thread`
+- **Audio**: Cubeb backend for cross-platform audio
+
+### Touch Input
+
+`VirtualPadOverlay` renders a transparent touch layer over the Metal view. Touch events are mapped to RPCS3 pad buttons (cross, circle, square, triangle, D-pad, triggers, analog sticks) and fed into the emulator via `pad_thread`.
+
+---
+
+## Key Differences from Desktop RPCS3
+
+| Feature | Desktop RPCS3 | Ps3Dream iOS |
+|---------|--------------|--------------|
+| GPU API | Direct Vulkan | Vulkan → MoltenVK → Metal |
+| JIT | OS-native JIT | `csops()` + Developer Mode |
+| UI | Qt widgets | Swift/UIKit |
+| Input | Keyboard/controller | Touch overlay |
+| Memory | ~8 GB+ | ~4 GB (iOS limit) |
+| Compiler | Host toolchain | Cross-compile for iOS ARM64 |
+| Audio | Cubeb/ALSA/WASAPI | Cubeb (AudioToolbox) |
+
+---
 
 ## Limitations
 
-- **Performance**: Mobile ARM64 is slower than desktop x86_64 for PS3 emulation
-- **Memory**: iOS apps are limited to ~4-6GB RAM; PS3 games may need more
-- **Compatibility**: Many games still require specific RSX fixes
-- **No Vulkan extensions**: Some advanced Vulkan features are missing on MoltenVK
-- **Heat**: Extended play will cause thermal throttling
-- **Dialog stubs**: Message dialogs and on-screen keyboard auto-dismiss
+- **Performance** — Mobile ARM64 is slower than desktop x86_64 for PS3 emulation
+- **Memory** — iOS apps are limited to ~4-6 GB; some PS3 games require more
+- **Compatibility** — Many games still need RSX-specific fixes
+- **Thermal** — Extended play will cause thermal throttling
+- **Dialogs** — Message dialogs and on-screen keyboard auto-dismiss (stubs)
+
+---
 
 ## Credits
 
-- **RPCS3** - PlayStation 3 emulator (https://rpcs3.net)
-- **APS3E** - Android port of RPCS3 by aenu
-- **MoltenVK** - Vulkan to Metal translation layer (Khronos Group)
-- **Cubeb** - Cross-platform audio library (Mozilla)
-- **yaml-cpp** - YAML parser
-- **glslang** - GLSL to SPIR-V compiler
+| Project | Role | License |
+|---------|------|---------|
+| [RPCS3](https://rpcs3.net) | PS3 emulator core | GPL-2.0 |
+| [MoltenVK](https://github.com/KhronosGroup/MoltenVK) | Vulkan → Metal | Apache-2.0 |
+| [Cubeb](https://github.com/mozilla/cubeb) | Cross-platform audio | ISC |
+| [asmjit](https://asmjit.com) | JIT assembler | Zlib |
+| [yaml-cpp](https://github.com/jbeder/yaml-cpp) | YAML parser | MIT |
+| [glslang](https://github.com/KhronosGroup/glslang) | GLSL → SPIR-V | Apache-2.0 |
+| [SoundTouch](https://www.surina.net/soundtouch/) | Audio resampling | LGPL-2.1 |
+| [VulkanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) | GPU memory | MIT |
+
+---
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 — see the [LICENSE](LICENSE) file for details.
+
+PS3Dream incorporates code from RPCS3 (GPL-2.0) and other open-source projects. All original licenses are respected.
