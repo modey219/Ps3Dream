@@ -68,21 +68,18 @@ class MemoryMonitor {
         let totalRAM = ProcessInfo.processInfo.physicalMemory
 
         var pagesFree: UInt64 = 0
-        var pagesTotal: UInt64 = 0
-        var pageSize: UInt64 = UInt64(vm_page_size)
+        let pageSize: UInt64 = UInt64(vm_page_size)
         var HostVmInfo64 = vm_statistics64()
         var hostSize = mach_msg_type_number_t(
             MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
 
-        withUnsafeMutablePointer(to: &HostVmInfo64) {
+        _ = withUnsafeMutablePointer(to: &HostVmInfo64) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(hostSize)) {
                 host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &hostSize)
             }
         }
 
         pagesFree = UInt64(HostVmInfo64.free_count)
-        pagesTotal = UInt64(HostVmInfo64.free_count + HostVmInfo64.active_count +
-                           HostVmInfo64.inactive_count + HostVmInfo64.wire_count)
 
         let availableRAM = pagesFree * pageSize
 

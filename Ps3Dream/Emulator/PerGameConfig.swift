@@ -170,7 +170,7 @@ class PerGameConfigManager {
     }
 
     private func extractLibrariesControl(_ settings: [String: String]) -> [String: String] {
-        var result: [String: String] = []
+        var result: [String: String] = [:]
         for (key, val) in settings {
             if key.hasPrefix("Core.Libraries Control") {
                 let libName = String(key.dropFirst("Core.Libraries Control.".count))
