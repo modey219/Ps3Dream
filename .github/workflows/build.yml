@@ -1670,15 +1670,12 @@ jobs:
           echo "=== Static libraries ==="
           echo "$NATIVE_LIBS"
 
-          # Build linker args. Libraries are listed in dependency order and then
-          # repeated once so circular references between rpcs3 and 3rdparty
-          # archives resolve.
+          # Build linker args. Use -force_load for each archive to resolve
+          # circular dependencies between rpcs3 and 3rdparty without needing
+          # to link each archive twice (Apple ld does not support --allow-multiple-definitions).
           LINK_LIBS=""
           for lib in $NATIVE_LIBS; do
-            LINK_LIBS="$LINK_LIBS -Xlinker $lib"
-          done
-          for lib in $NATIVE_LIBS; do
-            LINK_LIBS="$LINK_LIBS -Xlinker $lib"
+            LINK_LIBS="$LINK_LIBS -Xlinker -force_load -Xlinker $lib"
           done
 
           # Compile Swift sources
@@ -1710,7 +1707,6 @@ jobs:
             -Xlinker -lz \
             -Xlinker -liconv \
             -Xlinker -ObjC \
-            -Xlinker -allow-multiple-definitions \
             -Xlinker -v \
             -Xlinker -t \
             -emit-executable \
