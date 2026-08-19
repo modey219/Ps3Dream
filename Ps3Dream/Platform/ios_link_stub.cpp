@@ -33,10 +33,16 @@ using namespace std::literals;
 
 #include "Utilities/StrFmt.h"
 
-// IPV6_SUPPORT and thread_state are already defined in Thread.h
-
 namespace np
 {
+	// Defined in Emu/NP/ip_address.h
+	enum class IPV6_SUPPORT : u8
+	{
+		IPV6_UNKNOWN,
+		IPV6_UNSUPPORTED,
+		IPV6_SUPPORTED,
+	};
+
 	class np_handler
 	{
 	public:
