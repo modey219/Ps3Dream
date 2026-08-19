@@ -1001,6 +1001,29 @@ jobs:
             echo "Patched memory.cpp: vmaGetHeapBudgets → vmaGetBudget"
           fi
           
+          # Patch metal_layer.mm: use UIKit instead of AppKit on iOS
+          METAL_LAYER="$APS3E_CPP/rpcs3/rpcs3/Emu/RSX/VK/vkutils/metal_layer.mm"
+          if [ -f "$METAL_LAYER" ]; then
+            cat > "$METAL_LAYER" << 'METAL_EOF'
+          #pragma GCC diagnostic push
+          #pragma GCC diagnostic ignored "-Wold-style-cast"
+          #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+          #pragma GCC diagnostic ignored "-Wmissing-declarations"
+          #import <Foundation/Foundation.h>
+          #if TARGET_OS_IOS
+          #import <UIKit/UIKit.h>
+          #import <QuartzCore/QuartzCore.h>
+          void* GetCAMetalLayerFromMetalView(void* view) { return ((UIView*)view).layer; }
+          #else
+          #import <AppKit/AppKit.h>
+          #import <QuartzCore/QuartzCore.h>
+          void* GetCAMetalLayerFromMetalView(void* view) { return ((NSView*)view).layer; }
+          #endif
+          #pragma GCC diagnostic pop
+          METAL_EOF
+            echo "Patched metal_layer.mm for iOS/UIKit"
+          fi
+          
           # Patch JIT.h
           if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
             TMPJIT=$(mktemp)
