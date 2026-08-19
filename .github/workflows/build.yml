@@ -1415,6 +1415,7 @@ jobs:
             "${REPO_ROOT}/MoltenVK-build/Package/Headers"
             "${REPO_ROOT}/MoltenVK-build/stub_headers"
             "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/GPUOpen/include"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/VulkanMemoryAllocator/include"
           )
           
           # Ps3Dream native library (Objective-C++ bridge + platform + JIT + MVK)
@@ -1470,6 +1471,7 @@ jobs:
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/7zip/7zip/C
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/7zip/7zip
             ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty
+            ${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/3rdparty/VulkanMemoryAllocator/include
           )
           target_include_directories(rpcs3_emu PRIVATE ${_3rdparty_inc_dirs})
           target_include_directories(ps3dream_native PRIVATE ${_3rdparty_inc_dirs})
