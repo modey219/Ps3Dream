@@ -270,10 +270,6 @@ namespace aarch64
 std::string aarch64::get_cpu_brand() { return "Apple AArch64"; }
 aarch64::fault_reason aarch64::decode_fault_reason(const ucontext_t*) { return aarch64::fault_reason::undefined; }
 
-// SPU LLVM recompiler glue (LLVM_AVAILABLE is not defined on iOS).
-struct spu_llvm_compile_context;
-void spu_llvm_set_compile_context(spu_llvm_compile_context*) noexcept {}
-
 // ---------------------------------------------------------------------------
 // report_fatal_error – called by Thread.cpp emergency_exit.  In rpcs3 this
 // pops a Qt dialog; on iOS we just abort.

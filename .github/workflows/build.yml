@@ -767,20 +767,20 @@ jobs:
           typedef struct WOLFSSL WOLFSSL;
           typedef struct WOLFSSL_CTX WOLFSSL_CTX;
           typedef struct WOLFSSL_METHOD WOLFSSL_METHOD;
-          WOLFSSL_CTX* wolfSSL_CTX_new(WOLFSSL_METHOD* m){(void)m;return 0;}
-          WOLFSSL* wolfSSL_new(WOLFSSL_CTX* c){(void)c;return 0;}
-          int wolfSSL_Init(void){return 0;}
-          void wolfSSL_Cleanup(void){}
-          void wolfSSL_CTX_free(WOLFSSL_CTX* c){(void)c;}
-          void wolfSSL_free(WOLFSSL* s){(void)s;}
-          int wolfSSL_SetFD(WOLFSSL* s, int fd){(void)s;(void)fd;return 0;}
-          int wolfSSL_connect(WOLFSSL* s){(void)s;return 0;}
-          int wolfSSL_write(WOLFSSL* s, const void* d, int l){(void)s;(void)d;(void)l;return 0;}
-          int wolfSSL_read(WOLFSSL* s, void* d, int l){(void)s;(void)d;(void)l;return 0;}
-          int wolfSSL_get_error(WOLFSSL* s, int e){(void)s;(void)e;return 0;}
-          const char* wolfSSL_ERR_error_string(unsigned long e){(void)e;return "stub";}
-          WOLFSSL_METHOD* wolfTLSv1_2_client_method(void){return 0;}
-          WOLFSSL_METHOD* wolfTLSv1_3_client_method(void){return 0;}
+          static inline WOLFSSL_CTX* wolfSSL_CTX_new(WOLFSSL_METHOD* m){(void)m;return 0;}
+          static inline WOLFSSL* wolfSSL_new(WOLFSSL_CTX* c){(void)c;return 0;}
+          static inline int wolfSSL_Init(void){return 0;}
+          static inline void wolfSSL_Cleanup(void){}
+          static inline void wolfSSL_CTX_free(WOLFSSL_CTX* c){(void)c;}
+          static inline void wolfSSL_free(WOLFSSL* s){(void)s;}
+          static inline int wolfSSL_SetFD(WOLFSSL* s, int fd){(void)s;(void)fd;return 0;}
+          static inline int wolfSSL_connect(WOLFSSL* s){(void)s;return 0;}
+          static inline int wolfSSL_write(WOLFSSL* s, const void* d, int l){(void)s;(void)d;(void)l;return 0;}
+          static inline int wolfSSL_read(WOLFSSL* s, void* d, int l){(void)s;(void)d;(void)l;return 0;}
+          static inline int wolfSSL_get_error(WOLFSSL* s, int e){(void)s;(void)e;return 0;}
+          static inline const char* wolfSSL_ERR_error_string(unsigned long e){(void)e;return "stub";}
+          static inline WOLFSSL_METHOD* wolfTLSv1_2_client_method(void){return 0;}
+          static inline WOLFSSL_METHOD* wolfTLSv1_3_client_method(void){return 0;}
           WOLFEOF
           
           mkdir -p "$SRC_DIR/ffmpeg_stubs/libusb-1.0"
