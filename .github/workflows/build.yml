@@ -978,6 +978,13 @@ jobs:
             sed -i '' 's/m_zs\.next_in = data\.data();/m_zs.next_in = const_cast<u8*>(data.data());/g' "$SERIAL_EXT_CPP"
           fi
           
+          # Patch asmjit virtmem.cpp: include <libkern/OSCacheControl.h> on iOS too (not just macOS)
+          VIRTMEM_CPP="$APS3E_CPP/rpcs3/3rdparty/asmjit/asmjit/src/asmjit/core/virtmem.cpp"
+          if [ -f "$VIRTMEM_CPP" ]; then
+            sed -i '' 's/#if TARGET_OS_OSX/#if TARGET_OS_OSX || TARGET_OS_IOS/' "$VIRTMEM_CPP"
+            echo "Patched asmjit virtmem.cpp to include OSCacheControl.h on iOS"
+          fi
+          
           # Patch JIT.h
           if [ -f "$APS3E_CPP/rpcs3/Utilities/JIT.h" ]; then
             TMPJIT=$(mktemp)
