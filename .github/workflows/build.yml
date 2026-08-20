@@ -1635,10 +1635,12 @@ jobs:
 
           # Compile link-time stubs for symbols that the static libraries
           # reference but that the iOS 17 SDK does not export.
+          STUB_DIR="$RUNNER_TEMP/stubs"
+          mkdir -p "$STUB_DIR"
           xcrun -sdk iphoneos clang -target arm64-apple-ios17.0 \
-            -c Ps3Dream/Platform/ios_jit_stub.c -o "$APP_DIR/ios_jit_stub.o"
+            -c Ps3Dream/Platform/ios_jit_stub.c -o "$STUB_DIR/ios_jit_stub.o"
           xcrun -sdk iphoneos clang -target arm64-apple-ios17.0 \
-            -c Ps3Dream/Platform/ios_metal_stub.m -o "$APP_DIR/ios_metal_stub.o"
+            -c Ps3Dream/Platform/ios_metal_stub.m -o "$STUB_DIR/ios_metal_stub.o"
           xcrun -sdk iphoneos clang++ -target arm64-apple-ios17.0 -std=c++20 \
             -DARCH_ARM64=1 -DLLVM_AVAILABLE -D'__API_UNAVAILABLE(...)=' \
             -I"$SRC_DIR/rpcs3" \
@@ -1656,7 +1658,7 @@ jobs:
             -I"$SRC_DIR/rpcs3/3rdparty/VulkanMemoryAllocator/include" \
             -I"$SRC_DIR/rpcs3/3rdparty/zstd/zstd/lib" \
             -I"$GITHUB_WORKSPACE/llvm-ios-install/include" \
-            -c Ps3Dream/Platform/ios_link_stub.cpp -o "$APP_DIR/ios_link_stub.o"
+            -c Ps3Dream/Platform/ios_link_stub.cpp -o "$STUB_DIR/ios_link_stub.o"
           
           # Collect all static libraries produced by the native build:
           # ps3dream_native (glue) + rpcs3_emu (core) + all 3rdparty libs + LLVM + MoltenVK
@@ -1725,26 +1727,53 @@ jobs:
             Ps3Dream/Emulator/AppSettings.swift \
             Ps3Dream/Emulator/PerGameConfig.swift \
             Ps3Dream/Emulator/MemoryMonitor.swift \
-            "$APP_DIR/ios_jit_stub.o" \
-            "$APP_DIR/ios_metal_stub.o" \
-            "$APP_DIR/ios_link_stub.o"
+            "$STUB_DIR/ios_jit_stub.o" \
+            "$STUB_DIR/ios_metal_stub.o" \
+            "$STUB_DIR/ios_link_stub.o"
           test -x "$APP_DIR/Ps3Dream" || { echo "ERROR: Ps3Dream executable was not produced"; exit 1; }
           
-          # Create icon placeholder
-          mkdir -p "$APP_DIR/Assets.xcassets/AppIcon.appiconset"
-          cat > "$APP_DIR/Assets.xcassets/AppIcon.appiconset/Contents.json" << 'ICONEOF'
-          {
-            "images" : [
-              { "idiom" : "universal", "platform" : "ios", "size" : "1024x1024" }
-            ],
-            "info" : { "author" : "xcode", "version" : 1 }
-          }
-          ICONEOF
-          cat > "$APP_DIR/Assets.xcassets/Contents.json" << 'ASSETEOF'
-          {
-            "info" : { "author" : "xcode", "version" : 1 }
-          }
-          ASSETEOF
+          # Create app icon — generate a 1024x1024 PNG using Python and
+          # reference it via CFBundleIconFile (works without Xcode asset catalog compilation).
+          python3 -c "
+          import struct, zlib
+          W, H = 1024, 1024
+          # Dark blue gradient background with PS3-style curve
+          raw = b''
+          for y in range(H):
+              raw += b'\x00'  # filter byte
+              for x in range(W):
+                  # Radial gradient: dark blue center to black edges
+                  dx, dy = x - W//2, y - H//2
+                  dist = (dx*dx + dy*dy) ** 0.5 / (W//2)
+                  dist = min(dist, 1.0)
+                  r = int(20 * (1 - dist))
+                  g = int(40 * (1 - dist))
+                  b_val = int(120 * (1 - dist))
+                  raw += bytes([r, g, b_val, 255])
+          def make_chunk(tag, data):
+              c = tag + data
+              return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+          ihdr = struct.pack('>IIBBBBB', W, H, 8, 6, 0, 0, 0)
+          png = b'\x89PNG\r\n\x1a\n'
+          png += make_chunk(b'IHDR', ihdr)
+          png += make_chunk(b'IDAT', zlib.compress(raw))
+          png += make_chunk(b'IEND', b'')
+          with open('$APP_DIR/AppIcon.png', 'wb') as f:
+              f.write(png)
+          print('Generated 1024x1024 AppIcon.png')
+          "
+          # Update Info.plist to reference the icon file
+          PLIST="$APP_DIR/Info.plist"
+          if grep -q "CFBundleIconFile" "$PLIST"; then
+            # Replace existing entry
+            sed -i '' 's|<key>CFBundleIconFile</key>[[:space:]]*<string>[^<]*</string>|<key>CFBundleIconFile</key>\n\t<string>AppIcon</string>|' "$PLIST"
+          else
+            # Insert before CFBundleIdentifier
+            sed -i '' '/<key>CFBundleIdentifier/i\
+          \t<key>CFBundleIconFile</key>\
+          \t<string>AppIcon</string>
+          ' "$PLIST"
+          fi
           
           echo "=== App bundle contents ==="
           ls -la "$APP_DIR/"
