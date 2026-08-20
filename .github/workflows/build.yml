@@ -1575,8 +1575,9 @@ jobs:
           APP_DIR="Payload/Ps3Dream.app"
           mkdir -p "$APP_DIR"
           
-          # Copy Info.plist
+          # Copy Info.plist and strip CR (Windows line endings can confuse plist parsers)
           cp Ps3Dream/Info.plist "$APP_DIR/"
+          sed -i '' 's/\r$//' "$APP_DIR/Info.plist"
           
           # Copy config database (per-game settings for 2000+ games)
           mkdir -p "$APP_DIR"
@@ -1584,6 +1585,7 @@ jobs:
           
           # Copy entitlements
           cp Ps3Dream/Ps3Dream.entitlements "$APP_DIR/"
+          sed -i '' 's/\r$//' "$APP_DIR/Ps3Dream.entitlements"
           
           # Find the built static library
           NATIVE_LIB=$(find "$SRC_DIR/build_ios" -name "libps3dream_native.a" -path "*/Release/*" 2>/dev/null | head -1)
