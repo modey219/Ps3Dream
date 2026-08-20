@@ -1762,21 +1762,14 @@ jobs:
               f.write(png)
           print('Generated 1024x1024 AppIcon.png')
           "
-          # Update Info.plist to reference the icon file
-          PLIST="$APP_DIR/Info.plist"
-          if grep -q "CFBundleIconFile" "$PLIST"; then
-            # Replace existing entry
-            sed -i '' 's|<key>CFBundleIconFile</key>[[:space:]]*<string>[^<]*</string>|<key>CFBundleIconFile</key>\n\t<string>AppIcon</string>|' "$PLIST"
-          else
-            # Insert before CFBundleIdentifier
-            sed -i '' '/<key>CFBundleIdentifier/i\
-          \t<key>CFBundleIconFile</key>\
-          \t<string>AppIcon</string>
-          ' "$PLIST"
-          fi
           
           echo "=== App bundle contents ==="
           ls -la "$APP_DIR/"
+          
+          # Ad-hoc sign the entire bundle so LiveContainer can mmap the executable.
+          # --deep signs all nested code; --force overwrites any existing signature.
+          codesign --force --deep --sign - "$APP_DIR"
+          echo "Ad-hoc signed the app bundle"
           
           # Package IPA
           zip -r -y Ps3Dream.ipa Payload/
