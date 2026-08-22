@@ -1766,10 +1766,9 @@ jobs:
           echo "=== App bundle contents ==="
           ls -la "$APP_DIR/"
           
-          # Ad-hoc sign the entire bundle so LiveContainer can mmap the executable.
-          # --deep signs all nested code; --force overwrites any existing signature.
-          codesign --force --deep --sign - "$APP_DIR"
-          echo "Ad-hoc signed the app bundle"
+          # Do NOT code-sign the bundle — LiveContainer re-signs guest apps
+          # using its own certificate.  Ad-hoc signing causes CODESIGNING
+          # Invalid Page kills by conflicting with LiveContainer's loader.
           
           # Package IPA
           zip -r -y Ps3Dream.ipa Payload/
