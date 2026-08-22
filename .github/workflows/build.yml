@@ -1595,10 +1595,8 @@ jobs:
           
           if [ -n "$NATIVE_LIB" ]; then
             echo "Found native lib: $NATIVE_LIB"
-            cp "$NATIVE_LIB" "$APP_DIR/"
           else
-            echo "WARNING: Native lib not found, trying dylib"
-            find "$SRC_DIR/build_ios" -name "*.dylib" -exec cp {} "$APP_DIR/" \; 2>/dev/null || true
+            echo "WARNING: Native lib not found"
           fi
           
           # Collect all include paths for Swift compilation

@@ -271,12 +271,17 @@ std::string aarch64::get_cpu_brand() { return "Apple AArch64"; }
 aarch64::fault_reason aarch64::decode_fault_reason(const ucontext_t*) { return aarch64::fault_reason::undefined; }
 
 // ---------------------------------------------------------------------------
-// report_fatal_error – called by Thread.cpp emergency_exit.  In rpcs3 this
-// pops a Qt dialog; on iOS we just abort.
+// report_fatal_error – called by Thread.cpp emergency_exit and LLVM when
+// initialization fails.  On iOS we must NOT abort during static init
+// (dyld phase) or the app will crash before main() runs.  Instead, just
+// log and return so the caller can continue or crash later at a point
+// where we have better diagnostics.
 // ---------------------------------------------------------------------------
-[[noreturn]] void report_fatal_error(std::string_view, bool, bool)
+void report_fatal_error(std::string_view msg, bool, bool)
 {
-	std::abort();
+	// During dyld static initialization, abort() kills the process before
+	// main() or any Swift/ObjC code runs.  Swallow the error and return.
+	(void)msg;
 }
 
 // ---------------------------------------------------------------------------
